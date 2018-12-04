@@ -1,5 +1,28 @@
 library(shiny); library(reticulate); library(readr);
 
+colInfoBox <- function(incolname,incols){
+  #' incols:    reactivevalues sub-object that is a python DFCol
+  #'            object
+  #' incolname: char
+  incolinfo <- if('name' %in% names(incols[[incolname]]$colmeta)){
+    incols[[incolname]]$colmeta$name } else 'static column';
+  incoldivid <- paste0('cbg_',incolname);
+  if(length(incols[[incolname]]$rules)>0){
+    incolvals <- names(incols[[incolname]]$rules);
+    incolchoices <- lapply(incolvals,function(ii) {
+      with(incols[[incolname]]$rules[[ii]]
+           ,span(ii,br(),span(ruledesc,class='annotation')
+                 ,class=if(suggested) 'rulenamesugg' else 'rulename'))});
+    cbg <- checkboxGroupInput(incoldivid,'Available Represntations:'
+                              ,choiceNames = incolchoices
+                              ,choiceValues = incolvals);
+    class <- 'colinfodiv'} else {
+      cbg <- span();cls='colinfodiv_static';
+    }
+    div(incolname,br(),span(incolinfo,class='annotation')
+      ,cbg,class='cls');
+}
+
 shinyServer(function(input, output, session) {
   
   #py$sys$path <- c(py$sys$path,paste0(getwd(),'/datafinisher'));
@@ -28,6 +51,7 @@ shinyServer(function(input, output, session) {
         dat <- read_csv(input$infile$datapath);
       };
     }
+    rv$uitest <- lapply(rvp$dfmeta$inhead,colInfoBox,rvp$dfmeta$incols);
     # Now we have a sample data-file!
     rvp$dfmeta <- py$DFMeta(names(dat),as.character(dat[1,])
                             ,suggestions=py$autosuggestor);
@@ -35,8 +59,25 @@ shinyServer(function(input, output, session) {
   });
   
   observeEvent(input$debug,{
+    req(rvp$dfmeta);
+    # iicol <- 'v035_Drvd_AJCC_T';
+    # iicolinfo <- rvp$dfmeta$incols[[iicol]]$colmeta$name;
+    # iivals <- names(rvp$dfmeta$incols[[iicol]]$rules);
+    # iinames <- lapply(iivals
+    #                  ,function(ii) with(rvp$dfmeta$incols[[iicol]]$rules[[ii]]
+    #                                     ,span(ii,br()
+    #                                           ,span(ruledesc
+    #                                                 ,class='annotation'))));
+    # rv$uitest <- div(iicol,br(),span(iicolinfo,class='annotation')
+    #                  ,checkboxGroupInput(
+    #                    'cbgtest',label='Available Rules:'
+    #                    ,choiceNames = iinames,choiceValues = iivals)
+    #                  ,class='colinfodiv'
+    #                  );
+    #rv$uitest <- colInfoBox('v035_Drvd_AJCC_T',rvp$dfmeta$incols);
+    
     browser();
-  })
+  });
   
   output$test <- renderUI({rv$uitest});
 
