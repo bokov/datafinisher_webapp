@@ -2,7 +2,7 @@ library(shiny); library(reticulate); library(readr);
 
 shinyServer(function(input, output, session) {
   
-  py$sys$path <- c(py$sys$path,paste0(getwd(),'/datafinisher'));
+  #py$sys$path <- c(py$sys$path,paste0(getwd(),'/datafinisher'));
   source_python('df_reticulate.py');
   
   rv <- reactiveValues(uitest=textInput('foo','Bar'));
