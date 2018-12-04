@@ -1,0 +1,3 @@
+[submodule "dfshiny/datafinisher"]
+	path = dfshiny/datafinisher
+	url = git@github.com:UTHSCSA-CIRD/datafinisher
