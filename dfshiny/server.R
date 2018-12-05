@@ -73,7 +73,7 @@ shinyServer(function(input, output, session) {
       infodivs <- bs_append(infodivs,ii
                             ,colInfoBox(ii,rvp$dfmeta$incols));
     }
-    rv$ui_transform <- div(infodivs,id=infodivs_parent,onclick="
+    rv$ui_transform <- div(infodivs,id='infodivs_parent',onclick="
 function(){ Shiny.onInputChange('selectedinfodiv',document.getElementsByClassName('in')[0].getElementsByClassName('shiny-input-container')[0].id)}
                            ");
     # infodivs <- sapply(rvp$dfmeta$inhead
@@ -83,7 +83,7 @@ function(){ Shiny.onInputChange('selectedinfodiv',document.getElementsByClassNam
     return(head(dat[-1,],200));
   });
   
-  output$tb_transform <- renderUI({rv$ui_transform});
+  output[['tb_transform']] <- renderUI({rv$ui_transform});
   
   observeEvent(input$debug,{
     req(rvp$dfmeta);
