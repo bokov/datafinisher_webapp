@@ -16,11 +16,11 @@ colInfoBox <- function(incolname,incols){
     cbg <- checkboxGroupInput(incoldivid,'Available Represntations:'
                               ,choiceNames = incolchoices
                               ,choiceValues = incolvals);
-    class <- 'colinfodiv'} else {
+    cls <- 'colinfodiv'} else {
       cbg <- span();cls='colinfodiv_static';
     }
     div(incolname,br(),span(incolinfo,class='annotation')
-      ,cbg,class='cls');
+      ,cbg,class=cls);
 }
 
 shinyServer(function(input, output, session) {
@@ -32,7 +32,11 @@ shinyServer(function(input, output, session) {
   
   rvp <- reactiveValues();
   
-  output$infile_prev <- renderDataTable({
+  # Renders a sample of the uploaded data and as a 
+  # side effect creates the UI for manipulating it.
+  # TODO: Find a way to trigger the processing without
+  #       having to click this tab.
+  output$tb_infile_prev <- renderDataTable({
     # Don't attempt to produce output until file exists
     req(input$infile);
     # Peek at the file type. If it's CSV, use read_csv()
@@ -51,31 +55,21 @@ shinyServer(function(input, output, session) {
         dat <- read_csv(input$infile$datapath);
       };
     }
-    rv$uitest <- lapply(rvp$dfmeta$inhead,colInfoBox,rvp$dfmeta$incols);
+    
     # Now we have a sample data-file!
     rvp$dfmeta <- py$DFMeta(names(dat),as.character(dat[1,])
                             ,suggestions=py$autosuggestor);
+    # create current test output
+    rv$ui_transform <- lapply(rvp$dfmeta$inhead
+                        ,colInfoBox,rvp$dfmeta$incols);
+    # return a preview of the input
     return(head(dat[-1,],200));
   });
   
+  output$tb_transform <- renderUI({rv$ui_transform});
+  
   observeEvent(input$debug,{
     req(rvp$dfmeta);
-    # iicol <- 'v035_Drvd_AJCC_T';
-    # iicolinfo <- rvp$dfmeta$incols[[iicol]]$colmeta$name;
-    # iivals <- names(rvp$dfmeta$incols[[iicol]]$rules);
-    # iinames <- lapply(iivals
-    #                  ,function(ii) with(rvp$dfmeta$incols[[iicol]]$rules[[ii]]
-    #                                     ,span(ii,br()
-    #                                           ,span(ruledesc
-    #                                                 ,class='annotation'))));
-    # rv$uitest <- div(iicol,br(),span(iicolinfo,class='annotation')
-    #                  ,checkboxGroupInput(
-    #                    'cbgtest',label='Available Rules:'
-    #                    ,choiceNames = iinames,choiceValues = iivals)
-    #                  ,class='colinfodiv'
-    #                  );
-    #rv$uitest <- colInfoBox('v035_Drvd_AJCC_T',rvp$dfmeta$incols);
-    
     browser();
   });
   

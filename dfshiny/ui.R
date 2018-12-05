@@ -26,8 +26,9 @@ shinyUI(fluidPage(
     # Preview
     mainPanel(
       tabsetPanel(
-         tabPanel('Transform Data',uiOutput('test'))
-        ,tabPanel('Input Data',dataTableOutput('infile_prev'))
+         tabPanel('Debug',uiOutput('test'))
+        ,tabPanel('Transform Data',uiOutput('tb_transform'))
+        ,tabPanel('Input Data',dataTableOutput('tb_infile_prev'))
         )
       )
     )
