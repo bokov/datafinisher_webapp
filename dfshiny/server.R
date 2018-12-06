@@ -32,21 +32,36 @@ cleanDFCols <- function(incolid,obj){
   for(ii in c('as_is_col','colmeta','dfcol','unique_codes')){
     out[[ii]] <- obj[[ii]];
   }
+  # TODO: catch static incols and set their coldesc to something else
+  out$incoldesc <- if(out$as_is_col) '(static column)' else {
+    out$colmeta$name};
   out$available <- flattenRules(incolid,obj$rules);
   out$divIDavilable <- paste0('avail-',incolid);
   out$divavailable <- div(id=out$divIDavailable
+                          #,tags$b('Available Columns:')
                           ,lapply(out$available
                                   ,function(xx) {
                                     with(xx
                                          ,div(own_name
+                                              ,actionButton(addbid
+                                                            ,'Add/Update'
+                                                            ,class='btn btn-success')
+                                              ,br()
                                               ,span(ruledesc
                                                     ,class='annotation')
-                                              ,actionButton(addbid
-                                                            ,'Add This')
                                               ))}
                                   ));
+  out$divIDchosen <- paste0('chosen-',incolid);
   out$chosen <- list();
   out$incolid <- obj$name;
+  out$incolui <- if(out$as_is_col) p() else {
+    with(out
+         ,tagList(div(id=divIDchosen,tags$b('Chosen:'),chosen)
+                  ,div(id=divIDavilable,tags$b('Available:'),divavailable)))
+    };
+  out$divfull <- with(out,div(id=incolid,incolid,br()
+                              ,span(incoldesc,class='annotation')
+                              ,incolui));
   out;
 }
 
@@ -151,22 +166,38 @@ shinyServer(function(input, output, session) {
     # Now we have a sample data-file!
     rvp$dfmeta <- py$DFMeta(names(dat),as.character(dat[1,])
                             ,suggestions=py$autosuggestor);
+    message('\n*** dfmeta created ***\n');
     
     # data for populating UI and recording choices
     rv$dfinfolist <- sapply(rvp$dfmeta$inhead
                             ,function(ii) {
                               cleanDFCols(ii,rvp$dfmeta$incols)
                               },simplify=F);
+    message('\n*** dfinfolist created ***\n');
     
+    # baseline button values
+    rv$dfaddbVals <- setNames(data.frame(t(do.call(cbind,sapply(rv$dfinfolist
+                            ,function(xx) if (length(xx$available)>0){
+                              sapply(xx$available,function(yy) {
+                                with(yy,cbind(parent_name,own_name,addbid))})
+                              })))),c('incol','outcolpartial','button'));
     # create column controls
     infodivs <- bs_accordion('infodivs');
+    infodivs <- bs_set_opts(infodivs,use_heading_link=T);
     for(ii in rvp$dfmeta$inhead){
-      infodivs <- bs_append(infodivs,ii
-                            ,colInfoBox(ii,rvp$dfmeta$incols));
+      # infodivs <- bs_append(infodivs,ii
+      #                       ,colInfoBox(ii,rvp$dfmeta$incols));
+      # TODO: detect switchover from static to dynamic and change panel_type
+      infodivs<-bs_append(infodivs,ii,rv$dfinfolist[[ii]]$divfull);
     }
-    rv$ui_transform <- div(infodivs,id='infodivs_parent',onclick="
-function(){ Shiny.onInputChange('selectedinfodiv',document.getElementsByClassName('in')[0].getElementsByClassName('shiny-input-container')[0].id)}
-                           ");
+    message('\n*** infodivs created ***\n');
+
+        rv$ui_transform <- div(infodivs,id='infodivs_parent');
+    message('\n*** ui_transform created ***\n');
+    
+#     rv$ui_transform <- div(infodivs,id='infodivs_parent',onclick="
+# function(){ Shiny.onInputChange('selectedinfodiv',document.getElementsByClassName('in')[0].getElementsByClassName('shiny-input-container')[0].id)}
+#                            ");
     # infodivs <- sapply(rvp$dfmeta$inhead
     #                     ,colInfoBox,rvp$dfmeta$incols
     #                     ,simplify = F);
