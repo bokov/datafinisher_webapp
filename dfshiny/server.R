@@ -176,11 +176,16 @@ shinyServer(function(input, output, session) {
     message('\n*** dfinfolist created ***\n');
     
     # baseline button values
-    rv$dfaddbVals <- setNames(data.frame(t(do.call(cbind,sapply(rv$dfinfolist
+    dfaddbVals <- setNames(data.frame(t(do.call(cbind,sapply(rv$dfinfolist
                             ,function(xx) if (length(xx$available)>0){
                               sapply(xx$available,function(yy) {
                                 with(yy,cbind(parent_name,own_name,addbid))})
-                              })))),c('incol','outcolpartial','button'));
+                              }))),stringsAsFactors = F)
+                           ,c('incol','outcolpartial','button'));
+    dfaddbVals$val <- 0;
+    rv$dfaddbVals <- dfaddbVals;
+    message('\n*** dfaddbVals created ***\n');
+    
     # create column controls
     infodivs <- bs_accordion('infodivs');
     infodivs <- bs_set_opts(infodivs,use_heading_link=T);
@@ -207,35 +212,31 @@ shinyServer(function(input, output, session) {
   
   output[['tb_transform']] <- renderUI({rv$ui_transform});
   
+  # catch addb button clicks
+  observe({
+    req(rv$dfaddbVals);
+    for(ii in intersect(rv$dfaddbVals$button,isolate(names(input)))){
+      input[[ii]];
+      message('\n*** pinging button input ***\n');
+    }
+    changed<-isolate({
+      candidates<-with(rv$dfaddbVals,setNames(val,button));
+      candidates<-candidates[names(candidates)%in%names(input)];
+      if(length(candidates)>0){
+        names(candidates)[sapply(names(candidates),function(ii) {
+          candidates[ii]!=input[[ii]]})]};
+    });
+    if(length(changed)>0) for(ii in seq_len(nrow(changed))){
+      input[[ii]];
+      rv$dfaddbVals[rv$dfaddbVals$button==ii,'val']<-input[[ii]];
+      iicol <- rv$dfaddbVals[rv$dfaddbVals$button==ii,'incol'];
+      message('\n*** attempting insertUI ***\n');
+      insertUI(paste0('#chosen-',iicol),'beforeEnd',span(ii));
+      }
+  })
+
   observeEvent(input$debug,{
     req(rv$dfinfolist);
-    # rv$tv <- list()
-    # rv$tv$testname <- rvp$dfmeta$inhead[42];
-    # rv$tv$testcol <- rvp$dfmeta$incols[[rv$tv$testname]];
-    # rv$tv$testrules <- rv$tv$testcol$rules;
-    # rv$tv$testrulesinfo <- sapply(
-    #   names(rv$tv$testrules), function(xx) {
-    #     with(rv$tv$testrules[[xx]]
-    #          ,list(id=sprintf(gsub('^\\{0\\}','%s'
-    #                                ,extractors[[1]][2])
-    #                           ,rv$tv$testname)
-    #                ,descr=ruledesc,suggested=suggested))
-    #     },simplify=F)
-    # rv$tv$testrulesdivs <- lapply(
-    #   rv$tv$testrulesinfo,function(xx) {
-    #     with(xx
-    #          ,jqui_draggable(div(id=paste0('cb_',id),id,br()
-    #                              ,span(descr,class='annotation')
-    #                              ,class='btn btn-default')
-    #                          ,options=list(scope='dest')))
-    #     });
-    # 
-    # rv$tv$workingui <- div(
-    #   orderInput('source', 'Source'
-    #              ,items = sample(month.abb,15,rep=T)
-    #              ,as_source = TRUE, connect = 'dest')
-    #   ,orderInput('dest', 'Dest', items = NULL
-    #               , placeholder = 'Drag items here...'));
     t_incolid <- names(rv$dfinfolist)[42];
     t_dat <- rv$dfinfolist[[t_incolid]];
     browser();
