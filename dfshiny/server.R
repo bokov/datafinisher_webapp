@@ -1,6 +1,84 @@
 library(shiny); library(shinyjqui); library(bsplus);
 library(reticulate); library(readr);
 
+#' divFromAvail: create a div of UI elements based on
+#' what's available for a given column
+#'
+#' @param incolid: char
+#' @param dat: result of running cleanDFCols
+#'
+#' @return: shiny tags
+#'
+#' @examples
+divFromAvail<- function(incolid,dat){
+  divid <- paste0('avail-',incolid);
+  available <- dat[[incolid]]$available;
+  addbids <- paste0('addb-',names(available));
+  # construct IDs for buttons
+  browser();
+}
+
+#' getAvailable: provide the actual available rules
+#' specification for a DFCol object
+#'
+#' @param incolid: char, name of parent dfcol
+#' @param obj: DFMeta.dfcols attribute
+#'
+#' @return list
+#'
+#' @examples
+cleanDFCols <- function(incolid,obj){
+  obj <- obj[[incolid]]; out <- list();
+  for(ii in c('as_is_col','colmeta','dfcol','unique_codes')){
+    out[[ii]] <- obj[[ii]];
+  }
+  out$available <- flattenRules(incolid,obj$rules);
+  out$divIDavilable <- paste0('avail-',incolid);
+  out$divavailable <- div(id=out$divIDavailable
+                          ,lapply(out$available
+                                  ,function(xx) {
+                                    with(xx
+                                         ,div(own_name
+                                              ,span(ruledesc
+                                                    ,class='annotation')
+                                              ,actionButton(addbid
+                                                            ,'Add This')
+                                              ))}
+                                  ));
+  out$chosen <- list();
+  out$incolid <- obj$name;
+  out;
+}
+
+#' flattenRules: take a rules list and make each
+#' rule a flat named list so the overall nesting 
+#' max depth is 2
+#'
+#' @param incolid: char, name of parent dfcol
+#' @param rules: named list
+#'
+#' @return list
+#'
+#' @examples
+flattenRules <- function(incolid,rules){
+  out <- list();
+  for(ii in rules){
+    iiout <- ii[c('suggested','criteria','split_by_code','ruledesc')];
+    for(jj in ii$extractors){
+      # make name
+      jjid <- sprintf(gsub('\\{0\\}','%s',jj[2]),incolid);
+      # flatten and merge
+      jjout <- as.list(setNames(jj[1:3],c('extr','colidtmpl','args')));
+      jjout$addbid <- paste('addb',jjout$extr,jjid,sep='-');
+      jjout$parent_name <- incolid;
+      jjout$own_name<- jjid;
+      # assign
+      out[[jjid]]<-c(jjout,iiout);
+    }
+  }
+  out;
+}
+
 colInfoBox <- function(incolname,incols){
   #' incols:    reactivevalues sub-object that is a python DFCol
   #'            object
@@ -75,7 +153,10 @@ shinyServer(function(input, output, session) {
                             ,suggestions=py$autosuggestor);
     
     # data for populating UI and recording choices
-    
+    rv$dfinfolist <- sapply(rvp$dfmeta$inhead
+                            ,function(ii) {
+                              cleanDFCols(ii,rvp$dfmeta$incols)
+                              },simplify=F);
     
     # create column controls
     infodivs <- bs_accordion('infodivs');
@@ -96,7 +177,7 @@ function(){ Shiny.onInputChange('selectedinfodiv',document.getElementsByClassNam
   output[['tb_transform']] <- renderUI({rv$ui_transform});
   
   observeEvent(input$debug,{
-    req(rvp$dfmeta);
+    req(rv$dfinfolist);
     # rv$tv <- list()
     # rv$tv$testname <- rvp$dfmeta$inhead[42];
     # rv$tv$testcol <- rvp$dfmeta$incols[[rv$tv$testname]];
@@ -124,7 +205,8 @@ function(){ Shiny.onInputChange('selectedinfodiv',document.getElementsByClassNam
     #              ,as_source = TRUE, connect = 'dest')
     #   ,orderInput('dest', 'Dest', items = NULL
     #               , placeholder = 'Drag items here...'));
-      
+    t_incolid <- names(rv$dfinfolist)[42];
+    t_dat <- rv$dfinfolist[[t_incolid]];
     browser();
     # rv$uitest <- with(rv$tv
     #                   ,div(
