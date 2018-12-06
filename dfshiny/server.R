@@ -29,6 +29,12 @@ shinyServer(function(input, output, session) {
   #py$sys$path <- c(py$sys$path,paste0(getwd(),'/datafinisher'));
   source_python('df_reticulate.py');
   
+  # The below renders available transformation and buttons.
+  #
+  # div(lapply(rv$tv$testrulesinfo,function(xx) with(xx,div(id=id,id,br()
+  # ,span(descr,class='annotation'),actionButton(paste0('dfadd_',id)
+  #                                              ,label = 'Add')))))
+  # 
   rv <- reactiveValues(uitest=div(
      orderInput('source', 'Source'
                 ,items = factor(sample(month.abb,15,rep=T))
@@ -67,6 +73,10 @@ shinyServer(function(input, output, session) {
     # Now we have a sample data-file!
     rvp$dfmeta <- py$DFMeta(names(dat),as.character(dat[1,])
                             ,suggestions=py$autosuggestor);
+    
+    # data for populating UI and recording choices
+    
+    
     # create column controls
     infodivs <- bs_accordion('infodivs');
     for(ii in rvp$dfmeta$inhead){
@@ -90,7 +100,7 @@ function(){ Shiny.onInputChange('selectedinfodiv',document.getElementsByClassNam
     # rv$tv <- list()
     # rv$tv$testname <- rvp$dfmeta$inhead[42];
     # rv$tv$testcol <- rvp$dfmeta$incols[[rv$tv$testname]];
-    # rv$tv$testrules <- rv$tv$testcol$rules; 
+    # rv$tv$testrules <- rv$tv$testcol$rules;
     # rv$tv$testrulesinfo <- sapply(
     #   names(rv$tv$testrules), function(xx) {
     #     with(rv$tv$testrules[[xx]]
