@@ -185,6 +185,9 @@ shinyServer(function(input, output, session) {
     dfaddbVals$val <- 0;
     rv$dfaddbVals <- dfaddbVals;
     message('\n*** dfaddbVals created ***\n');
+    for(ii in dfaddbVals$button){
+      onclick(ii,function(ii) message('*** ',ii,' ***'));
+    }
     
     # create column controls
     infodivs <- bs_accordion('infodivs');
@@ -196,44 +199,15 @@ shinyServer(function(input, output, session) {
       infodivs<-bs_append(infodivs,ii,rv$dfinfolist[[ii]]$divfull);
     }
     message('\n*** infodivs created ***\n');
-
-        rv$ui_transform <- div(infodivs,id='infodivs_parent');
+    
+    rv$ui_transform <- div(infodivs,id='infodivs_parent');
     message('\n*** ui_transform created ***\n');
     
-#     rv$ui_transform <- div(infodivs,id='infodivs_parent',onclick="
-# function(){ Shiny.onInputChange('selectedinfodiv',document.getElementsByClassName('in')[0].getElementsByClassName('shiny-input-container')[0].id)}
-#                            ");
-    # infodivs <- sapply(rvp$dfmeta$inhead
-    #                     ,colInfoBox,rvp$dfmeta$incols
-    #                     ,simplify = F);
     # return a preview of the input
     return(head(dat[-1,],200));
   });
   
   output[['tb_transform']] <- renderUI({rv$ui_transform});
-  
-  # catch addb button clicks
-  observe({
-    req(rv$dfaddbVals);
-    for(ii in intersect(rv$dfaddbVals$button,isolate(names(input)))){
-      input[[ii]];
-      message('\n*** pinging button input ***\n');
-    }
-    changed<-isolate({
-      candidates<-with(rv$dfaddbVals,setNames(val,button));
-      candidates<-candidates[names(candidates)%in%names(input)];
-      if(length(candidates)>0){
-        names(candidates)[sapply(names(candidates),function(ii) {
-          candidates[ii]!=input[[ii]]})]};
-    });
-    if(length(changed)>0) for(ii in seq_len(nrow(changed))){
-      input[[ii]];
-      rv$dfaddbVals[rv$dfaddbVals$button==ii,'val']<-input[[ii]];
-      iicol <- rv$dfaddbVals[rv$dfaddbVals$button==ii,'incol'];
-      message('\n*** attempting insertUI ***\n');
-      insertUI(paste0('#chosen-',iicol),'beforeEnd',span(ii));
-      }
-  })
 
   observeEvent(input$debug,{
     req(rv$dfinfolist);
