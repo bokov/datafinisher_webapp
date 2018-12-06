@@ -16,7 +16,7 @@ shinyUI(fluidPage(
     sidebarPanel(
       
        fileInput("infile", "Choose CSV File"
-                ,multiple = FALSE
+                ,multiple = FALSE,width = '200px',
                 ,accept = c("text/csv","text/tsv",".csv",".tsv"
                             ,".tab",".txt"
                             ,"text/tab-separated-values,text/plain"
