@@ -1,21 +1,16 @@
 library(shiny); library(shinyjqui); library(bsplus);
 library(reticulate); library(readr);
 
-#' divFromAvail: create a div of UI elements based on
-#' what's available for a given column
-#'
-#' @param incolid: char
-#' @param dat: result of running cleanDFCols
-#'
-#' @return: shiny tags
-#'
-#' @examples
-divFromAvail<- function(incolid,dat){
-  divid <- paste0('avail-',incolid);
-  available <- dat[[incolid]]$available;
-  addbids <- paste0('addb-',names(available));
-  # construct IDs for buttons
-  browser();
+addChosen <- function(incolid,availableid){
+  delbid <- paste0('delb-',availableid);
+  targetid <- paste0('#chosen-',incolid);
+  # cat('\n*** Adding ',availableid,' to ',targetid,' ***\n');
+  insertUI(targetid,where='beforeEnd',immediate=T
+           ,ui=div(id=availableid,availableid
+                   ,actionButton(delbid,'Remove'
+                                 ,class='btn-danger')
+                   ,br()));
+  
 }
 
 #' getAvailable: provide the actual available rules
@@ -38,7 +33,6 @@ cleanDFCols <- function(incolid,obj){
   out$available <- flattenRules(incolid,obj$rules);
   out$divIDavilable <- paste0('avail-',incolid);
   out$divavailable <- div(id=out$divIDavailable
-                          #,tags$b('Available Columns:')
                           ,lapply(out$available
                                   ,function(xx) {
                                     with(xx
@@ -56,12 +50,14 @@ cleanDFCols <- function(incolid,obj){
   out$incolid <- obj$name;
   out$incolui <- if(out$as_is_col) p() else {
     with(out
-         ,tagList(div(id=divIDchosen,tags$b('Chosen:'),chosen)
-                  ,div(id=divIDavilable,tags$b('Available:'),divavailable)))
-    };
+         ,tagList(div(id=out$divIDchosen,tags$b('Chosen:'))
+                  ,div(id=divIDavilable,tags$b('Available:'),divavailable)))};
   out$divfull <- with(out,div(id=incolid,incolid,br()
                               ,span(incoldesc,class='annotation')
                               ,incolui));
+  if(!out$as_is_col){
+    jqui_sortable(ui=paste0('#',out$divIDchosen)
+                  ,options=list(axis='y',items='div'))};
   out;
 }
 
@@ -175,7 +171,7 @@ shinyServer(function(input, output, session) {
                               },simplify=F);
     message('\n*** dfinfolist created ***\n');
     
-    # baseline button values
+    # baseline button values ...no longer needed?
     dfaddbVals <- setNames(data.frame(t(do.call(cbind,sapply(rv$dfinfolist
                             ,function(xx) if (length(xx$available)>0){
                               sapply(xx$available,function(yy) {
@@ -185,10 +181,15 @@ shinyServer(function(input, output, session) {
     dfaddbVals$val <- 0;
     rv$dfaddbVals <- dfaddbVals;
     message('\n*** dfaddbVals created ***\n');
-    for(ii in dfaddbVals$button){
-      onclick(ii,function(ii) message('*** ',ii,' ***'));
-    }
-    
+
+    # This is the part that detects clicks on the Add/Update buttons
+    # Have to wrap the expr argument in substitute because otherwise
+    # it doesn't correctly read the ii value. Wierd.
+    for(ii in rv$dfaddbVals$button){
+      ids <- subset(rv$dfaddbVals,button==ii);
+      eval(substitute(onclick(xx,addChosen(yy$incol[1],yy$outcolpartial[1])
+                              ,add=T),env=list(xx=ii,yy=ids)))};
+
     # create column controls
     infodivs <- bs_accordion('infodivs');
     infodivs <- bs_set_opts(infodivs,use_heading_link=T);
