@@ -1,16 +1,61 @@
 library(shiny); library(shinyjqui); library(bsplus);
 library(reticulate); library(readr);
 
-addChosen <- function(incolid,availableid){
-  delbid <- paste0('delb-',availableid);
+# attach a proper index to a sortable input
+sortableWatcher<-function(targetid,inputid
+                          ,selector='auto',event='sortupdate'){
+  # if targetid has no leading hash, add one
+  if(!grepl('^#',targetid)) targetid <- paste0('#',targetid);
+  # if inputid has a leading hash remove it
+  #inputid <- gsub('^#','',inputid);
+  if(missing(inputid)) inputid <- targetid;
+  if(missing(selector)) selector <- paste0(targetid,'>div');
+  js <- sprintf("
+  $('%1$s').sortable().on('%2$s',function(event,ui){
+    Shiny.onInputChange('uigroup','chosenid');
+    Shiny.onInputChange('%3$s', $('%4$s').map(function(){
+                return this.id}).get())})"
+                ,targetid,event,inputid,selector);
+  #print(js);
+  runjs(js);
+}
+
+# TODO: For some reason the %in% input[[targetid]] stuff is flaky
+# still allows duplicate values. Might want to just look at 
+# names(rv$dfinfolist[[incol]]$chosen) and act solely on that.
+
+addChosen <- function(incolid,availableid,rv,input,finalid=availableid){
+  delbid <- paste0('delb-',finalid);
   targetid <- paste0('#chosen-',incolid);
-  # cat('\n*** Adding ',availableid,' to ',targetid,' ***\n');
-  insertUI(targetid,where='beforeEnd',immediate=T
-           ,ui=div(id=availableid,availableid
-                   ,actionButton(delbid,'Remove'
-                                 ,class='btn-danger')
-                   ,br()));
-  
+  # create the data structure for the new output column
+  incoldata <- rv$dfinfolist[[incolid]];
+  payload <- with(incoldata,c(available[[availableid]][c('extr','args','ruledesc','split_by_code','parent_name')]
+                              ,list(own_name=finalid,delbid=delbid)));
+  # add it to the chosen columns
+  rv$dfinfolist[[incolid]]$chosen[[finalid]] <- payload;
+  runjs(sprintf("$('%s').trigger('sortupdate')",finalid));
+  #browser();
+  if(!finalid %in% input[[targetid]]){
+    insertUI(targetid,where='beforeEnd',immediate=T
+             ,ui=div(id=finalid,finalid
+                     ,actionButton(delbid,'Remove'
+                                   ,class='btn-danger'),br()
+                     ,span(payload$ruledesc,class='annotation')))
+    };
+  onclick(delbid,removeChosen(incolid,finalid,rv));
+  #runjs(sprintf("$('%s').sortable('refresh')",finalid));
+  runjs(sprintf("$('%s').trigger('sortupdate')",finalid));
+}
+
+removeChosen <- function(incolid,finalid,rv){
+  finalid <- gsub('^#','',finalid);
+  rv$dfinfolist[[incolid]]$chosen[[finalid]]<-NULL;
+  #browser();
+  # turning finalid back into an #id selector
+  finalid <- paste0('#',finalid);
+  removeUI(finalid,immediate = T);
+  #runjs(sprintf("$('%s').sortable('refresh')",finalid));
+  runjs(sprintf("$('%s').trigger('sortupdate')",finalid));
 }
 
 #' getAvailable: provide the actual available rules
@@ -118,12 +163,6 @@ shinyServer(function(input, output, session) {
   #py$sys$path <- c(py$sys$path,paste0(getwd(),'/datafinisher'));
   source_python('df_reticulate.py');
   
-  # The below renders available transformation and buttons.
-  #
-  # div(lapply(rv$tv$testrulesinfo,function(xx) with(xx,div(id=id,id,br()
-  # ,span(descr,class='annotation'),actionButton(paste0('dfadd_',id)
-  #                                              ,label = 'Add')))))
-  # 
   rv <- reactiveValues(uitest=div(
      orderInput('source', 'Source'
                 ,items = factor(sample(month.abb,15,rep=T))
@@ -171,45 +210,90 @@ shinyServer(function(input, output, session) {
                               },simplify=F);
     message('\n*** dfinfolist created ***\n');
     
+    # all possible Add/Update names and chosen divs
+    # rv$divIDs <- do.call(
+    #   rbind,sapply(rv$dfinfolist,function(xx){
+    #     if(!xx$as_is_col) data.frame(chosen=xx$divIDchosen
+    #                                 ,addbid=sapply(xx$available
+    #                                                ,function(yy)yy$addbid)
+    #                                 ,stringsAsFactors = F)},simplify=F));
     # baseline button values ...no longer needed?
-    dfaddbVals <- setNames(data.frame(t(do.call(cbind,sapply(rv$dfinfolist
-                            ,function(xx) if (length(xx$available)>0){
+    isolate({divIDs <- setNames(data.frame(t(do.call(
+      cbind,sapply(rv$dfinfolist,function(xx) {
+        if (length(xx$available)>0){
                               sapply(xx$available,function(yy) {
-                                with(yy,cbind(parent_name,own_name,addbid))})
-                              }))),stringsAsFactors = F)
-                           ,c('incol','outcolpartial','button'));
-    dfaddbVals$val <- 0;
-    rv$dfaddbVals <- dfaddbVals;
-    message('\n*** dfaddbVals created ***\n');
-
+                                with(yy
+                                     ,cbind(parent_name,own_name
+                                            ,addbid))})
+                              }}))),stringsAsFactors = F)
+      ,c('incolid','availableid','addbid'));
+    divIDs$chosenid <- paste0('chosen-',divIDs$incolid);
+    });
+    
+    message('\n*** divIDs created ***\n');
+    
     # This is the part that detects clicks on the Add/Update buttons
     # Have to wrap the expr argument in substitute because otherwise
     # it doesn't correctly read the ii value. Wierd.
-    for(ii in rv$dfaddbVals$button){
-      ids <- subset(rv$dfaddbVals,button==ii);
-      eval(substitute(onclick(xx,addChosen(yy$incol[1],yy$outcolpartial[1])
+    isolate({for(ii in divIDs$addbid){
+      ids <- subset(divIDs,addbid==ii);
+      eval(substitute(onclick(xx
+                              ,addChosen(yy$incolid[1]
+                                         ,yy$availableid[1]
+                                         ,rv,input)
                               ,add=T),env=list(xx=ii,yy=ids)))};
+    });
+    
+    # Same for delete buttons
 
-    # create column controls
+    # Save the divIDs for later access
+    rv$divIDs <- divIDs;
+
+        # create column controls
     infodivs <- bs_accordion('infodivs');
     infodivs <- bs_set_opts(infodivs,use_heading_link=T);
     for(ii in rvp$dfmeta$inhead){
       # infodivs <- bs_append(infodivs,ii
       #                       ,colInfoBox(ii,rvp$dfmeta$incols));
       # TODO: detect switchover from static to dynamic and change panel_type
-      infodivs<-bs_append(infodivs,ii,rv$dfinfolist[[ii]]$divfull);
+      isolate({
+        infodivs<-bs_append(infodivs,ii,rv$dfinfolist[[ii]]$divfull)
+        });
     }
     message('\n*** infodivs created ***\n');
     
+    
+    # Populate the ui_transform, needed by the 'Transform Data' panel
     rv$ui_transform <- div(infodivs,id='infodivs_parent');
     message('\n*** ui_transform created ***\n');
     
-    # return a preview of the input
+    # populate the 'Transform Data' tab
+    output[['tb_transform']] <- renderUI(isolate(rv$ui_transform));
+    # make the chosen divs sortable and register inputs
+    for(ii in unique(divIDs$chosenid)){
+      eval(substitute(sortableWatcher(ii)))};
+    runjs("Shiny.onInputChange('choosewait',+ new Date())");
+    
+    # set output options so stuff starts rendering before tab active
+    outputOptions(output,'tb_infile_prev',suspendWhenHidden=F);
+    outputOptions(output,'tb_transform',suspendWhenHidden=F);
+    
+    # return a sample of the input for the 'Input Data' tab
     return(head(dat[-1,],200));
   });
   
-  output[['tb_transform']] <- renderUI({rv$ui_transform});
-
+  observeEvent(input$choosewait,{
+    print('Checking choosewait');
+    if(input$choosewait!=0){
+      for(ii in unique(rv$divIDs$chosenid)){
+        eval(substitute(sortableWatcher(ii)))};
+      print('Running sortableWatcher');
+      runjs("
+if( $('[id^=chosen-].ui-sortable').length == 0 ) {
+  xx = + new Date() } else {
+  xx = 0}; Shiny.onInputChange('choosewait',xx);");};
+  });
+  
   observeEvent(input$debug,{
     req(rv$dfinfolist);
     t_incolid <- names(rv$dfinfolist)[42];
