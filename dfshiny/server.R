@@ -1,4 +1,4 @@
-library(shiny); library(shinyjqui); library(bsplus);
+library(shiny); library(shinyjqui); library(bsplus); library(queryBuilder);
 library(reticulate); library(readr);
 
 # attach a proper index to a sortable input
