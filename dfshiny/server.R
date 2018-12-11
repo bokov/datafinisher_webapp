@@ -304,11 +304,10 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
     req(rv$dfinfolist);
     t_incolid <- names(rv$dfinfolist)[42];
     t_dat <- rv$dfinfolist[[t_incolid]];
-    browser();
-    rv$uitest<- renderQueryBuilder(queryBuilderOutput(queryBuilder(filters=list(
+    rv$qbtest<- renderQueryBuilder(queryBuilder(filters=list(
       #list(name = 'st', type = 'date')
-      list(name = 'cc', type = 'string', input = 'selectize', values=strsplit(t_dat$colmeta$ccd_list,',')[[1]]) 
-      ,list(name = 'mc', type = 'string', input = 'text')
+      #list(name = 'cc', type = 'string', input = 'selectize', values=strsplit(t_dat$colmeta$ccd_list,',')[[1]]) 
+      list(name = 'mc', type = 'string', input = 'text')
       ,list(name='ix',type='integer')
       ,list(name = 'vt', type = 'string', input = 'text')
       ,list(name = 'tc', type = 'string', input = 'text')
@@ -318,7 +317,9 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
       ,list(name = 'un', type = 'string', input = 'text')
       ,list(name = 'lc', type = 'string', input = 'text')
       ,list(name='cf',type='double')
-    ))));
+    )));
+    browser();
+    
     # rv$uitest <- with(rv$tv
     #                   ,div(
     #   # orderInput('source', 'Source'
