@@ -304,7 +304,7 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
     req(rv$dfinfolist);
     t_incolid <- names(rv$dfinfolist)[42];
     t_dat <- rv$dfinfolist[[t_incolid]];
-    rv$qbtest<- renderQueryBuilder(queryBuilder(filters=list(
+    rv$qbtest<- queryBuilder(filters=list(
       #list(name = 'st', type = 'date')
       #list(name = 'cc', type = 'string', input = 'selectize', values=strsplit(t_dat$colmeta$ccd_list,',')[[1]]) 
       list(name = 'mc', type = 'string', input = 'text')
@@ -317,7 +317,7 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
       ,list(name = 'un', type = 'string', input = 'text')
       ,list(name = 'lc', type = 'string', input = 'text')
       ,list(name='cf',type='double')
-    )));
+    ));
     browser();
     
     # rv$uitest <- with(rv$tv
@@ -336,6 +336,7 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
     #   );
   });
   
+  output$qbtest <- renderQueryBuilder(rv$qbtest);
   output$test <- renderUI({rv$uitest});
 
 })
