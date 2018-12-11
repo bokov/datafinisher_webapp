@@ -31,20 +31,27 @@ addChosen <- function(incolid,availableid,rv,input,finalid=availableid){
   incoldata <- rv$dfinfolist[[incolid]];
   payload <- with(incoldata,c(available[[availableid]][c('extr','args','ruledesc','split_by_code','parent_name')]
                               ,list(own_name=finalid,delbid=delbid)));
-  # add it to the chosen columns
-  rv$dfinfolist[[incolid]]$chosen[[finalid]] <- payload;
-  runjs(sprintf("$('%s').trigger('sortupdate')",finalid));
-  #browser();
-  if(!finalid %in% input[[targetid]]){
+  if(!finalid %in% names(rv$dfinfolist[[incolid]]$chosen)){
     insertUI(targetid,where='beforeEnd',immediate=T
              ,ui=div(id=finalid,finalid
                      ,actionButton(delbid,'Remove'
                                    ,class='btn-danger'),br()
                      ,span(payload$ruledesc,class='annotation')))
-    };
+    }
+  # add it to the chosen columns
+  rv$dfinfolist[[incolid]]$chosen[[finalid]] <- payload;
+  runjs(sprintf("$('%s').trigger('sortupdate')",finalid));
+  #browser();
+  # if(!finalid %in% input[[targetid]]){
+  #   insertUI(targetid,where='beforeEnd',immediate=T
+  #            ,ui=div(id=finalid,finalid
+  #                    ,actionButton(delbid,'Remove'
+  #                                  ,class='btn-danger'),br()
+  #                    ,span(payload$ruledesc,class='annotation')))
+  #   };
   onclick(delbid,removeChosen(incolid,finalid,rv));
   #runjs(sprintf("$('%s').sortable('refresh')",finalid));
-  runjs(sprintf("$('%s').trigger('sortupdate')",finalid));
+  #runjs(sprintf("$('%s').trigger('sortupdate')",finalid));
 }
 
 removeChosen <- function(incolid,finalid,rv){
