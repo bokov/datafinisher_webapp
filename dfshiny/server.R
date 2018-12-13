@@ -320,6 +320,14 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
   observeEvent(input$activecolid,{
     if(input$activecolid=='(none selected)'){
       disable('makecustom');hide('customui');} else {
+        # get the non-empty fields from colmeta
+        # use them to generate updated querybuilder
+        # use them to generate updated multiselect
+        # 
+        # TODO elsewhere:
+        #   delimiter for multiselect
+        #   aggregator menu 
+        #   save button 
         enable('makecustom')}});
 
   observeEvent(input$debug,{
