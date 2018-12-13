@@ -141,28 +141,28 @@ flattenRules <- function(incolid,rules){
   out;
 }
 
-colInfoBox <- function(incolname,incols){
-  #' incols:    reactivevalues sub-object that is a python DFCol
-  #'            object
-  #' incolname: char
-  incolinfo <- if('name' %in% names(incols[[incolname]]$colmeta)){
-    incols[[incolname]]$colmeta$name } else 'static column';
-  incoldivid <- paste0('cbg_',incolname);
-  if(length(incols[[incolname]]$rules)>0){
-    incolvals <- names(incols[[incolname]]$rules);
-    incolchoices <- lapply(incolvals,function(ii) {
-      with(incols[[incolname]]$rules[[ii]]
-           ,span(ii,br(),span(ruledesc,class='annotation')
-                 ,class=if(suggested) 'rulenamesugg' else 'rulename'))});
-    cbg <- checkboxGroupInput(incoldivid,'Available Represntations:'
-                              ,choiceNames = incolchoices
-                              ,choiceValues = incolvals);
-    cls <- 'colinfodiv'} else {
-      cbg <- span();cls='colinfodiv_static';
-    }
-    div(incolname,br(),span(incolinfo,class='annotation')
-      ,cbg,class=cls);
-}
+#' colInfoBox <- function(incolname,incols){
+#'   #' incols:    reactivevalues sub-object that is a python DFCol
+#'   #'            object
+#'   #' incolname: char
+#'   incolinfo <- if('name' %in% names(incols[[incolname]]$colmeta)){
+#'     incols[[incolname]]$colmeta$name } else 'static column';
+#'   incoldivid <- paste0('cbg_',incolname);
+#'   if(length(incols[[incolname]]$rules)>0){
+#'     incolvals <- names(incols[[incolname]]$rules);
+#'     incolchoices <- lapply(incolvals,function(ii) {
+#'       with(incols[[incolname]]$rules[[ii]]
+#'            ,span(ii,br(),span(ruledesc,class='annotation')
+#'                  ,class=if(suggested) 'rulenamesugg' else 'rulename'))});
+#'     cbg <- checkboxGroupInput(incoldivid,'Available Represntations:'
+#'                               ,choiceNames = incolchoices
+#'                               ,choiceValues = incolvals);
+#'     cls <- 'colinfodiv'} else {
+#'       cbg <- span();cls='colinfodiv_static';
+#'     }
+#'     div(incolname,br(),span(incolinfo,class='annotation')
+#'       ,cbg,class=cls);
+#' }
 
 shinyServer(function(input, output, session) {
   
@@ -175,10 +175,13 @@ shinyServer(function(input, output, session) {
                 ,as_source = TRUE, connect = 'dest')
     ,orderInput('dest', 'Dest', items = NULL
                , placeholder = 'Drag items here...')
+    #,queryBuilderOutput('qbtest')
     #verbatimTextOutput('order'))
     ));
   
   rvp <- reactiveValues();
+  
+  onclick('makecustom',show('customui'));
   
   # Renders a sample of the uploaded data and as a 
   # side effect creates the UI for manipulating it.
@@ -189,18 +192,18 @@ shinyServer(function(input, output, session) {
     req(input$infile);
     # Peek at the file type. If it's CSV, use read_csv()
     if(input$infile$type == 'text/csv'){
-      dat <- read_csv(input$infile$datapath)
+      dat <- read_csv(input$infile$datapath,n_max=1000)
     } else {
       # If not csv, assume tab-delimited and *try* 
       # read_tsv()
-      dat <- try(read_tsv(input$infile$datapath))
+      dat <- try(read_tsv(input$infile$datapath,n_max=1000))
       # if there was an error or there is only one
       # column in the result, assume we guessed wrong
       # and fail over to using read_csv() after all
       # TODO: more general guessing of delimiters or
       #       optional user-supplied delimiters
       if(is(dat,'try-error')||ncol(dat)==1){
-        dat <- read_csv(input$infile$datapath);
+        dat <- read_csv(input$infile$datapath,n_max=1000);
       };
     }
     
@@ -266,6 +269,9 @@ shinyServer(function(input, output, session) {
         infodivs<-bs_append(infodivs,ii,rv$dfinfolist[[ii]]$divfull)
         });
     }
+    runjs("$('.collapse').on('shown.bs.collapse', function (e) {
+        Shiny.onInputChange('activecolid',($('.in>.panel-body>div').attr('id')));
+    })")
     message('\n*** infodivs created ***\n');
     
     
@@ -285,7 +291,7 @@ shinyServer(function(input, output, session) {
     outputOptions(output,'tb_transform',suspendWhenHidden=F);
     
     # return a sample of the input for the 'Input Data' tab
-    return(head(dat[-1,],200));
+    return(head(dat[-1,],100));
   });
   
   observeEvent(input$choosewait,{
@@ -297,17 +303,33 @@ shinyServer(function(input, output, session) {
       runjs("
 if( $('[id^=chosen-].ui-sortable').length == 0 ) {
   xx = + new Date() } else {
-  xx = 0}; Shiny.onInputChange('choosewait',xx);");};
+    /* This is where we track the currenly opened column panel */
+    $('.collapse').on('shown.bs.collapse', function (e) {
+      activecolid = $('.in>.panel-body>div').attr('id');
+      if(activecolid == undefined){activecolid = '(none selected)'};
+      $('.activecolidtxt').text(activecolid);
+      Shiny.onInputChange('activecolid',activecolid);
+    }).on('hide.bs.collapse',function(e){
+      activecolid = '(none selected)';
+      $('.activecolidtxt').text(activecolid);
+      Shiny.onInputChange('activecolid',activecolid);
+    });
+    xx = 0}; Shiny.onInputChange('choosewait',xx);");};
   });
   
+  observeEvent(input$activecolid,{
+    if(input$activecolid=='(none selected)'){
+      disable('makecustom');hide('customui');} else {
+        enable('makecustom')}});
+
   observeEvent(input$debug,{
     req(rv$dfinfolist);
     t_incolid <- names(rv$dfinfolist)[42];
     t_dat <- rv$dfinfolist[[t_incolid]];
     rv$qbtest<- queryBuilder(filters=list(
       #list(name = 'st', type = 'date')
-      #list(name = 'cc', type = 'string', input = 'selectize', values=strsplit(t_dat$colmeta$ccd_list,',')[[1]]) 
-      list(name = 'mc', type = 'string', input = 'text')
+      list(name = 'cc', type = 'string', input = 'selectize', values=strsplit(t_dat$colmeta$ccd_list,',')[[1]]) 
+      ,list(name = 'mc', type = 'string', input = 'text')
       ,list(name='ix',type='integer')
       ,list(name = 'vt', type = 'string', input = 'text')
       ,list(name = 'tc', type = 'string', input = 'text')
@@ -336,7 +358,7 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
     #   );
   });
   
-  output$qbtest <- renderQueryBuilder(rv$qbtest);
-  output$test <- renderUI({rv$uitest});
+  output$test <- renderUI({print('rendering test');rv$uitest});
+  output$qbtest <- renderQueryBuilder({print('rendering qbtest');rv$qbtest});
 
 })
