@@ -4,8 +4,8 @@ options(shiny.maxRequestSize=50*1024^2);
 
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
-  
-  useShinyjs()
+  includeCSS('df.css')
+  ,useShinyjs()
   
   # Application title
   ,titlePanel("Datafinisher WebApp")
