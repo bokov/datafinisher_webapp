@@ -169,6 +169,11 @@ shinyServer(function(input, output, session) {
   #py$sys$path <- c(py$sys$path,paste0(getwd(),'/datafinisher'));
   source_python('df_reticulate.py');
   
+  runjs("$('#customQB').on('hidden.bs.collapse',function(){
+        Shiny.onInputChange('qbtest_out',null);
+        Shiny.onInputChange('qbtest_validate',true);
+      })");
+  
   rv <- reactiveValues(uitest=div(
      orderInput('source', 'Source'
                 ,items = factor(sample(month.abb,15,rep=T))
@@ -179,9 +184,36 @@ shinyServer(function(input, output, session) {
     #verbatimTextOutput('order'))
     ));
   
+  filterlist <- list(
+     concept_cd=list(name = 'cc'
+                    , type = 'string'
+                    , input = 'selectize'
+                    , values=c()
+                    , criteria = quote(isTRUE(ccd > 1)))
+    ,modifier_cd=list(name = 'mc', type = 'string', input = 'text'
+                      ,criteria=quote(isTRUE(mod > 0)))
+    ,instance_num=list(name='ix',type='integer'
+                       ,criteria=quote(isTRUE(mxinsts>1)))
+    ,valtype_cd=list(name = 'vt', type = 'string', input = 'text'
+                     ,criteria=quote(isTRUE(valtype_cd>0)))
+    ,tval_char=list(name = 'tc', type = 'string', input = 'text'
+                    ,criteria=quote(isTRUE(tval_char>0)))
+    ,nval_num=list(name='nv',type='double'
+                   ,criteria=quote(isTRUE(nval_num>0)))
+    ,valueflag_cd=list(name = 'vf', type = 'string', input = 'text'
+                       ,criteria=quote(isTRUE(valueflag_cd>0)))
+    ,quantity_num=list(name='qt',type='double'
+                       ,criteria=quote(isTRUE(quantity_num>0)))
+    ,units_cd=list(name = 'un', type = 'string', input = 'text'
+                   ,criteria=quote(isTRUE(units_cd>0)))
+    ,location_cd=list(name = 'lc', type = 'string', input = 'text'
+                      ,criteria=quote(isTRUE(location_cd>0)))
+    ,confidence_num=list(name='cf',type='double'
+                         ,criteria=quote(isTRUE(confidence_num>0))));
+  
   rvp <- reactiveValues();
   
-  onclick('makecustom',show('customui'));
+  #onclick('makecustom',show('customui'));
   
   # Renders a sample of the uploaded data and as a 
   # side effect creates the UI for manipulating it.
@@ -253,8 +285,6 @@ shinyServer(function(input, output, session) {
                               ,add=T),env=list(xx=ii,yy=ids)))};
     });
     
-    # Same for delete buttons
-
     # Save the divIDs for later access
     rv$divIDs <- divIDs;
 
@@ -329,44 +359,149 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
         #   aggregator menu 
         #   save button 
         enable('makecustom')}});
+  
+  # make sure custom rules have names that are safe, legal, 
+  # and unique
+  observeEvent(input$customTrName,{
+    cleanedName <- gsub('[_.]+','_',make.names(input$customTrName));
+    updateTextInput(session,'customTrName'
+                    ,value=tail(gsub('[_.]+','_'
+                                     ,make.names(c(names(rvp$dfmeta$rules)
+                                                   ,cleanedName)
+                                                 ,unique = T)),1));
+    });
+  
+  # offer a choice of columns from which to chose the ones that will have
+  # access to this transform. Only fields available in all these columns
+  # will be options in the transform
+  output$customWhichCols <- renderUI(
+    if(input$choosewait==0){
+      selectizeInput('customSelCols'
+                     ,label='Select the main column or columns in your data for
+                             which this transformation should be available:'
+                     ,choices=unique(rv$divIDs$incolid),multiple=T)} else {
+                       span()});
+  
+  # when choice of columns changes, update the permitted list of variables
+  observeEvent(c(input$customSelCols,input$customTrDesc),{
+    applicable <- T; out <- filterlist;
+    for(ii in input$customSelCols){
+      applicable <- applicable & sapply(filterlist,function(xx) {
+        eval(xx$criteria,envir=rv$dfinfolist[[ii]]$colmeta)});
+      if(!is.null(rv$dfinfolist[[ii]]$colmeta$ccd_list)){
+        newcodes <- strsplit(rv$dfinfolist[[ii]]$colmeta$ccd_list,",")[[1]];
+        out$concept_cd$values <- union(out$concept_cd$values,newcodes);
+        } else cat('\n',ii,' has no ccd_list\n');
+      };
+    # They have NULL values not because they lack codes but 
+    # because they have too many. Catch those cases and turn
+    # them into text instead of selectives
+    if(is.null(out$concept_cd$values)){
+      out$concept_cd$values <- NULL;
+      out$concept_cd$input <- 'text';
+    }
+    validchoices<-names(rv$currentFilterlist <- out[applicable]);
+    print('Updated rv$currentFilterList');
+    
+    ready <- !is.null(input$customTrDesc) && input$customTrDesc != '' &&
+      !is.null(input$customSelCols) && input$customSelCols != '';
+    if(ready & length(validchoices)==0) {
+      showNotification('There are no fields that are shared by all the main
+                        columns you selected. Please change your selection.'
+                       ,type='error',duration=30);
+      ready<-F;
+    }
+    if(ready) {
+      rv$qbtest<- queryBuilder(filters=unname(rv$currentFilterlist));
+      rv$customWhichFieldsReady <- selectizeInput('customSelFields'
+                                                  ,label='Select the field or
+                                                        fields you wish this
+                                                        transformation to 
+                                                        return:'
+                                                  ,multiple=T
+                                                  ,choices=validchoices);
+      show('customWhichFields');
+      show('customQBhead');
+    } else {
+      hide('customWhichFields');
+      runjs("$('#customQB').collapse('hide')");
+      hide('customQBhead');
+      hide('customAggregate');
+    }
+  });
+  
+  output$customWhichFields <- renderUI(rv$customWhichFieldsReady);
+  output$qbtest <- renderQueryBuilder({print('rendering qbtest');rv$qbtest});
+  
+  observeEvent(c(input$customSelFields,input$customTrDesc
+                 ,input$qbtest_validate)
+               ,{
+                 ready <- !is.null(input$customSelFields) &&
+                   input$customSelFields != '' &&
+                   !is.null(input$customTrDesc) &&
+                   input$customTrDesc != '';
+                 if(ready){
+                   # determine if numeric aggregation possible
+                   numagg <- length(input$customSelFields)==1 &&
+                     input$customSelFields %in% grep('_num$'
+                                                     ,names(filterlist),val=T);
+                   # make list of choices
+                   choices<- list(
+                     `Last non-missing value`='last'
+                     ,`First non-missing value`='first'
+                     ,`Minimal value (by lexical order if text)`='min'
+                     ,`Maximal value (by lexical order if text)`='max'
+                     ,`Any non missing values? (T/F)`='any'
+                     ,`Concatenate together all unique non-missing values`='concatunique'
+                     );
+                   if(numagg) choices <- c(choices,list(Average='mean'
+                                                        ,Median='median'));
+                   # update customAggregate choices
+                   updateSelectInput(session,'customAggregate'
+                                     ,label='If there are more than one result
+                                             for the same visit, how do you wish
+                                             to aggregate them?'
+                                     ,choices=choices);
+                   show('customAggregate');
+                   if(is.null(input$qbtest_validate)||input$qbtest_validate) {
+                     enable('customSave')
+                     } else disable('customSave');
+                   } else {
+                     hide('customAggregate');
+                     disable('customSave');
+                   }
+                   });
+  # present user with choice of fields
+  #output$customWhichFields <- renderUI({
+  #  req(rv$currentFilterlist);
+ #  observeEvent(rv$currentFilterlist,{
+ #    validchoices <- names(rv$currentFilterList);
+ #    #if(length(rv$currentFilterList)==0) span() else {
+ #    cat('\nUpdating customWhichFields with',validchoices,'\n');
+ #    out <- selectizeInput('customSelFields'
+ #                  ,label='Select the field or fields you wish this
+ #                  transformation to return:',multiple=T
+ #                  ,choices=validchoices);
+ #      
+ #  #});
+ #    output$customWhichFields <- renderUI(out);
+ # #     };
+ #    });
+  observeEvent(input$customCancel,{
+    # reset to empty values
+    updateSelectizeInput(session,'customSelCols',selected=character(0));
+    updateTextAreaInput(session,'customTrDesc',value='');
+    updateTextInput(session,'customTrName',value = 'custom');
+  })
 
   observeEvent(input$debug,{
     req(rv$dfinfolist);
     t_incolid <- names(rv$dfinfolist)[42];
     t_dat <- rv$dfinfolist[[t_incolid]];
-    rv$qbtest<- queryBuilder(filters=list(
-      #list(name = 'st', type = 'date')
-      list(name = 'cc', type = 'string', input = 'selectize', values=strsplit(t_dat$colmeta$ccd_list,',')[[1]]) 
-      ,list(name = 'mc', type = 'string', input = 'text')
-      ,list(name='ix',type='integer')
-      ,list(name = 'vt', type = 'string', input = 'text')
-      ,list(name = 'tc', type = 'string', input = 'text')
-      ,list(name='nv',type='double')
-      ,list(name = 'vf', type = 'string', input = 'text')
-      ,list(name='qt',type='double')
-      ,list(name = 'un', type = 'string', input = 'text')
-      ,list(name = 'lc', type = 'string', input = 'text')
-      ,list(name='cf',type='double')
-    ));
-    browser();
     
-    # rv$uitest <- with(rv$tv
-    #                   ,div(
-    #   # orderInput('source', 'Source'
-    #   #            ,items = testrulesdivs
-    #   #            ,as_source = TRUE, connect = 'dest')
-    #   div(testrulesdivs,id='FOO')
-    #   # ,jqui_droppable(div('Drag items here...')
-    #   #                 ,options=list(scope='dest'))
-    #   ,jqui_sortable(div('Drag items here...',id='dest')
-    #                  ,options=list(scope='dest'))
-    #   # ,orderInput('dest', 'Dest', items = NULL
-    #   #             , placeholder = 'Drag items here...')
-    #   )
-    #   );
+    browser();
   });
   
   output$test <- renderUI({print('rendering test');rv$uitest});
-  output$qbtest <- renderQueryBuilder({print('rendering qbtest');rv$qbtest});
 
 })
