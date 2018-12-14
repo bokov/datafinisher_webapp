@@ -141,32 +141,8 @@ flattenRules <- function(incolid,rules){
   out;
 }
 
-#' colInfoBox <- function(incolname,incols){
-#'   #' incols:    reactivevalues sub-object that is a python DFCol
-#'   #'            object
-#'   #' incolname: char
-#'   incolinfo <- if('name' %in% names(incols[[incolname]]$colmeta)){
-#'     incols[[incolname]]$colmeta$name } else 'static column';
-#'   incoldivid <- paste0('cbg_',incolname);
-#'   if(length(incols[[incolname]]$rules)>0){
-#'     incolvals <- names(incols[[incolname]]$rules);
-#'     incolchoices <- lapply(incolvals,function(ii) {
-#'       with(incols[[incolname]]$rules[[ii]]
-#'            ,span(ii,br(),span(ruledesc,class='annotation')
-#'                  ,class=if(suggested) 'rulenamesugg' else 'rulename'))});
-#'     cbg <- checkboxGroupInput(incoldivid,'Available Represntations:'
-#'                               ,choiceNames = incolchoices
-#'                               ,choiceValues = incolvals);
-#'     cls <- 'colinfodiv'} else {
-#'       cbg <- span();cls='colinfodiv_static';
-#'     }
-#'     div(incolname,br(),span(incolinfo,class='annotation')
-#'       ,cbg,class=cls);
-#' }
-
 shinyServer(function(input, output, session) {
   
-  #py$sys$path <- c(py$sys$path,paste0(getwd(),'/datafinisher'));
   source_python('df_reticulate.py');
   
   runjs("$('#customQB').on('hidden.bs.collapse',function(){
@@ -188,27 +164,38 @@ shinyServer(function(input, output, session) {
      concept_cd=list(name = 'cc'
                     , type = 'string'
                     , input = 'selectize'
+                    , label = 'Concept Code (concept_cd)'
                     , values=c()
                     , criteria = quote(isTRUE(ccd > 1)))
     ,modifier_cd=list(name = 'mc', type = 'string', input = 'text'
+                      ,label='Modifier Code (modifier_cd)'
                       ,criteria=quote(isTRUE(mod > 0)))
     ,instance_num=list(name='ix',type='integer'
+                       ,label='Instance Number (instance_num)'
                        ,criteria=quote(isTRUE(mxinsts>1)))
     ,valtype_cd=list(name = 'vt', type = 'string', input = 'text'
+                     ,label='Value Type (valtype_cd)'
                      ,criteria=quote(isTRUE(valtype_cd>0)))
     ,tval_char=list(name = 'tc', type = 'string', input = 'text'
+                    ,label='Text Val (tval_char)'
                     ,criteria=quote(isTRUE(tval_char>0)))
     ,nval_num=list(name='nv',type='double'
+                   ,label='Numeric Value (nval_num)'
                    ,criteria=quote(isTRUE(nval_num>0)))
     ,valueflag_cd=list(name = 'vf', type = 'string', input = 'text'
+                       ,label='Outside Reference Range (valueflag_cd)'
                        ,criteria=quote(isTRUE(valueflag_cd>0)))
     ,quantity_num=list(name='qt',type='double'
+                       ,label='Quantity (quantity_num)'
                        ,criteria=quote(isTRUE(quantity_num>0)))
     ,units_cd=list(name = 'un', type = 'string', input = 'text'
+                   ,label='Unit of Measure (units_cd)'
                    ,criteria=quote(isTRUE(units_cd>0)))
     ,location_cd=list(name = 'lc', type = 'string', input = 'text'
+                      ,label='Location Code (location_cd)'
                       ,criteria=quote(isTRUE(location_cd>0)))
     ,confidence_num=list(name='cf',type='double'
+                         ,label='Confidence Level (confidence_num)'
                          ,criteria=quote(isTRUE(confidence_num>0))));
   
   rvp <- reactiveValues();
@@ -292,11 +279,16 @@ shinyServer(function(input, output, session) {
     infodivs <- bs_accordion('infodivs');
     infodivs <- bs_set_opts(infodivs,use_heading_link=T);
     for(ii in rvp$dfmeta$inhead){
-      # infodivs <- bs_append(infodivs,ii
-      #                       ,colInfoBox(ii,rvp$dfmeta$incols));
-      # TODO: detect switchover from static to dynamic and change panel_type
       isolate({
-        infodivs<-bs_append(infodivs,ii,rv$dfinfolist[[ii]]$divfull)
+        if(rv$dfinfolist[[ii]]$as_is_col){
+          infodivs <- htmltools::tagAppendChild(
+            infodivs
+            ,div(class='panel panel-default pn-colstatic'
+                 ,div(class='panel-heading',ii)
+                 ,div(class='panel-body',rv$dfinfolist[[ii]]$divfull)));
+        } else {
+          infodivs<-bs_append(infodivs,ii,rv$dfinfolist[[ii]]$divfull);
+        }
         });
     }
     # Not quite working, but seems on the right track: making the static columns
@@ -418,7 +410,8 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
       ready<-F;
     }
     if(ready) {
-      rv$qbtest<- queryBuilder(filters=unname(rv$currentFilterlist));
+      rv$qbtest<- queryBuilder(filters=unname(rv$currentFilterlist)
+                               ,allow_empty=T);
       rv$customWhichFieldsReady <- selectizeInput('customSelFields'
                                                   ,label='Select the field or
                                                         fields you wish this
@@ -437,7 +430,23 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
   });
   
   output$customWhichFields <- renderUI(rv$customWhichFieldsReady);
-  output$qbtest <- renderQueryBuilder({print('rendering qbtest');rv$qbtest});
+  
+  output$qbtest <- renderQueryBuilder({
+    print('rendering qbtest');
+    runjs("Shiny.onInputChange('qbinit',+ new Date())");
+    rv$qbtest});
+  
+  # fix the labels on queryBuilder
+  observeEvent(input$qbinit,{
+    cat('\n*** Attempting to update QB filter labels ***\n');
+    for(xx in rv$currentFilterlist) {
+      runjs(sprintf("
+      $('#qbtest').data('queryBuilder').filters.filter(function(el){
+              return el.id=='%s';})[0].label = '%s';"
+              ,xx$name,xx$label))
+    }
+    runjs("$('#qbtest').queryBuilder('reset')");
+    })
   
   observeEvent(c(input$customSelFields,input$customTrDesc
                  ,input$qbtest_validate)
@@ -445,7 +454,9 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
                  ready <- !is.null(input$customSelFields) &&
                    input$customSelFields != '' &&
                    !is.null(input$customTrDesc) &&
-                   input$customTrDesc != '';
+                   input$customTrDesc != '' &&
+                   !is.null(input$customSelCols) &&
+                   input$customSelCols != '';
                  if(ready){
                    # determine if numeric aggregation possible
                    numagg <- length(input$customSelFields)==1 &&
@@ -499,6 +510,30 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
     updateTextAreaInput(session,'customTrDesc',value='');
     updateTextInput(session,'customTrName',value = 'custom');
   })
+
+  observeEvent(input$customSave,{
+    forincols <- input$customSelCols;
+    nametemplate<-paste0('{0}_',trname <- input$customTrName);
+    filter <- queryBuilder:::recurseFilter(input$qbtest_out);
+    transform <- list(
+       extr=trname
+      ,colidtmpl=nametemplate
+      ,ruledesc=input$customTrDesc
+      ,fields=input$customSelFields
+      ,aggregate=input$customAggregate
+      ,filter=filter
+      # compatibility
+      ,args=NA
+      ,criteria=sprintf("colid %in% %s",paste(forincols,collapse=','))
+      ,split_by_code=F
+      ,suggested=F
+      ,extractors=list(c(filter,nametemplate))
+      );
+    isolate({
+      rvp$dfmeta$rules[[trname]]<-transform;
+      # then use (or create) a rules->available function for each in forincols
+      });
+  });
 
   observeEvent(input$debug,{
     req(rv$dfinfolist);
