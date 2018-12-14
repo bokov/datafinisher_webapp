@@ -299,6 +299,12 @@ shinyServer(function(input, output, session) {
         infodivs<-bs_append(infodivs,ii,rv$dfinfolist[[ii]]$divfull)
         });
     }
+    # Not quite working, but seems on the right track: making the static columns
+    # back to non-accordion
+    #
+    # for(ii in setdiff(names(rv$dfinfolist),rv$divIDs$incolid)) {
+    # runjs(sprintf("$('#%s').parent().removeClass('panel-collapse collapse in').parent().show()",ii))
+    # }
     runjs("$('.collapse').on('shown.bs.collapse', function (e) {
         Shiny.onInputChange('activecolid',($('.in>.panel-body>div').attr('id')));
     })")
