@@ -1,6 +1,9 @@
 library(shiny); library(shinyjqui); library(bsplus); library(queryBuilder);
 library(reticulate); library(readr);
 
+# load various useful stuff
+source('templates.R');
+
 # attach a proper index to a sortable input
 sortableWatcher<-function(targetid,inputid
                           ,selector='auto',event='sortupdate'){
@@ -64,6 +67,12 @@ removeChosen <- function(incolid,finalid,rv){
   runjs(sprintf("$('%s').trigger('sortupdate')",finalid));
 }
 
+
+withHtmlTemplate <- function(env,template,...){
+  env <- c(env,list(...),text_=template);
+  do.call(htmlTemplate,env);
+}
+
 #' getAvailable: provide the actual available rules
 #' specification for a DFCol object
 #'
@@ -82,30 +91,37 @@ cleanDFCols <- function(incolid,obj){
   out$incoldesc <- if(out$as_is_col) '(static column)' else {
     out$colmeta$name};
   out$available <- flattenRules(incolid,obj$rules);
-  out$divIDavilable <- paste0('avail-',incolid);
-  out$divavailable <- div(id=out$divIDavailable
-                          ,lapply(out$available
-                                  ,function(xx) {
-                                    with(xx
-                                         ,div(own_name
-                                              ,actionButton(addbid
-                                                            ,'Add/Update'
-                                                            ,class='btn btn-success')
-                                              ,br()
-                                              ,span(ruledesc
-                                                    ,class='annotation')
-                                              ))}
-                                  ));
+  out$divIDavailable <- paste0('avail-',incolid);
+  out$divavailable <- withHtmlTemplate(
+    out,templates$multidivavailable
+    ,innerDivs=lapply(out$available,withHtmlTemplate
+                      ,templates$divavailable));
+  # out$divavailable <- div(id=out$divIDavailable
+  #                         ,lapply(out$available
+  #                                 ,function(xx) {
+  #                                   with(xx
+  #                                        ,div(own_name
+  #                                             ,actionButton(addbid
+  #                                                           ,'Add/Update'
+  #                                                           ,class='btn btn-success')
+  #                                             ,br()
+  #                                             ,span(ruledesc
+  #                                                   ,class='annotation')
+  #                                             ))}
+  #                                 ));
   out$divIDchosen <- paste0('chosen-',incolid);
   out$chosen <- list();
   out$incolid <- obj$name;
   out$incolui <- if(out$as_is_col) p() else {
-    with(out
-         ,tagList(div(id=out$divIDchosen,tags$b('Chosen:'))
-                  ,div(id=divIDavilable,tags$b('Available:'),divavailable)))};
-  out$divfull <- with(out,div(id=incolid,incolid,br()
-                              ,span(incoldesc,class='annotation')
-                              ,incolui));
+    withHtmlTemplate(out,templates$incolui)};
+  # out$incolui <- if(out$as_is_col) p() else {
+  #   with(out
+  #        ,tagList(div(id=divIDchosen,tags$b('Chosen:'))
+  #                 ,div(id=divIDavilable,tags$b('Available:'),divavailable)))};
+  out$divfull <- withHtmlTemplate(out,templates$divfull);
+  # out$divfull <- with(out,div(id=incolid,incolid,br()
+  #                             ,span(incoldesc,class='annotation')
+  #                             ,incolui));
   if(!out$as_is_col){
     jqui_sortable(ui=paste0('#',out$divIDchosen)
                   ,options=list(axis='y',items='div'))};
@@ -531,14 +547,36 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
       ,filter=filter
       # compatibility
       ,args=NA
-      ,criteria=sprintf("colid %in% %s",paste(forincols,collapse=','))
+      ,criteria=sprintf("colid %%in%% %s",paste(forincols,collapse=','))
       ,split_by_code=F
       ,suggested=F
-      ,extractors=list(c(filter,nametemplate))
+      ,extractors=list(list(trname,nametemplate,list()))
       );
     isolate({
+      # add to the master rules list
       rvp$dfmeta$rules[[trname]]<-transform;
-      # then use (or create) a rules->available function for each in forincols
+      # for each eligible main column...
+      for (ii in forincols) {
+        # prepar it
+        iiavailable <- flattenRules(ii,list(transform))[[1]];
+        # insert it into the available list for that column
+        rv$dfinfolist[[ii]]$available[[iiavailable$own_name]]<-iiavailable;
+        # add to the available UI divs
+        insertUI(paste0("#avail-",ii,">div"),'beforeEnd'
+                 , withHtmlTemplate(iiavailable,templates$divavailable)
+                 ,immediate=T);
+        # update the divIDs data.frame
+        rv$divIDs<-rbind(rv$divIDs
+                         ,iivals<-with(iiavailable
+                               ,c(parent_name,own_name,addbid
+                                  ,paste0('chosen-',parent_name))));
+        # instrument the Add/Update
+        onclick(addbid
+                ,addChosen(iivals$incolid[1]
+                           ,iivals$availableid[1]
+                           ,rv,input),add=T);
+        }
+        
       });
   });
 
