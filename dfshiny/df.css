@@ -1,3 +1,13 @@
 #tb_transform{
-  overflow: scroll;
+  overflow-y: scroll;
+  height: 1200px;
+}
+
+#tb_transform .panel-default .panel-heading,.panel-body{
+  padding-top: 1px;
+}
+
+#tb_transform .panel-default .panel-body {
+  padding-bottom: 1px;
+  background-color: whitesmoke;
 }
