@@ -514,7 +514,14 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
   observeEvent(input$customSave,{
     forincols <- input$customSelCols;
     nametemplate<-paste0('{0}_',trname <- input$customTrName);
-    filter <- queryBuilder:::recurseFilter(input$qbtest_out);
+    # the save button should be disabled if the input is 
+    # invalid, so if input$qbtest_out is null, that's because
+    # the user has chosen not to filter
+    filter <- if(is.null(input$qbtest_out)||length(input$qbtest_out$rules)==0){
+      "TRUE";
+    } else {
+      queryBuilder:::recurseFilter(input$qbtest_out);
+    }
     transform <- list(
        extr=trname
       ,colidtmpl=nametemplate
