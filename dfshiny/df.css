@@ -1,13 +1,25 @@
+/* To make the available columns scroll inside the page */
 #tb_transform{
   overflow-y: scroll;
   height: 1200px;
 }
 
+
+
+/* To distinguish the non-dynamic columns and make them more compact*/
 #tb_transform .panel-default .panel-heading,.panel-body{
   padding-top: 1px;
 }
-
 #tb_transform .panel-default .panel-body {
   padding-bottom: 1px;
   background-color: whitesmoke;
+}
+
+
+
+/* To line up the selection widgets for available transforms*/
+.transform-argsel {
+  display: inline-block;
+  padding-left: 10px;
+  vertical-align: middle;
 }
