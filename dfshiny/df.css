@@ -1,17 +1,22 @@
 /* To make the available columns scroll inside the page */
 #tb_transform{
   overflow-y: scroll;
-  height: 1200px;
+  height: 800px;
 }
 
+
+/* The static columns don't need headers */
+#tb_transform .panel-default .panel-heading{
+  visibility: hidden;
+  padding: 0;
+  height: 0;
+}
 
 
 /* To distinguish the non-dynamic columns and make them more compact*/
-#tb_transform .panel-default .panel-heading,.panel-body{
-  padding-top: 1px;
-}
 #tb_transform .panel-default .panel-body {
-  padding-bottom: 1px;
+  padding-bottom: 0; padding-top: 0;
+  margin-bottom: -1px; margin-top: -1px;
   background-color: whitesmoke;
 }
 
