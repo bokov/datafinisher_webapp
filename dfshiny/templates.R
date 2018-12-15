@@ -41,8 +41,9 @@ filterlist <- list(
   ,nval_num=list(name='nv',type='double'
                  ,label='Numeric Value (nval_num)'
                  ,criteria=quote(isTRUE(nval_num>0)))
-  ,valueflag_cd=list(name = 'vf', type = 'string', input = 'text'
+  ,valueflag_cd=list(name = 'vf', type = 'string', input = 'selectize'
                      ,label='Outside Reference Range (valueflag_cd)'
+                     ,values=c('H','A','@','L')
                      ,criteria=quote(isTRUE(valueflag_cd>0)))
   ,quantity_num=list(name='qt',type='double'
                      ,label='Quantity (quantity_num)'
