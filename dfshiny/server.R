@@ -348,18 +348,12 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
     xx = 0}; Shiny.onInputChange('choosewait',xx);");};
   });
   
-  observeEvent(input$activecolid,{
-    if(input$activecolid=='(none selected)'){
-      disable('makecustom');hide('customui');} else {
-        # get the non-empty fields from colmeta
-        # use them to generate updated querybuilder
-        # use them to generate updated multiselect
-        # 
-        # TODO elsewhere:
-        #   delimiter for multiselect
-        #   aggregator menu 
-        #   save button 
-        enable('makecustom')}});
+  # observeEvent(input$activecolid,{
+  #   if(input$activecolid=='(none selected)'){
+  #     disable('makecustom');hide('customui');} else {
+  #       # TODO elsewhere:
+  #       #   delimiter for multiselect
+  #       enable('makecustom')}});
   
   # make sure custom rules have names that are safe, legal, 
   # and unique
@@ -529,7 +523,7 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
       rvp$dfmeta$rules[[trname]]<-transform;
       # for each eligible main column...
       for (ii in forincols) {
-        # prepar it
+        # prepare it
         iiavailable <- flattenRules(ii,list(transform))[[1]];
         # insert it into the available list for that column
         rv$dfinfolist[[ii]]$available[[iiavailable$own_name]]<-iiavailable;
