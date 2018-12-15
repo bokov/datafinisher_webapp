@@ -87,15 +87,27 @@ cleanDFCols <- function(incolid,obj){
   for(ii in c('as_is_col','colmeta','dfcol','unique_codes')){
     out[[ii]] <- obj[[ii]];
   }
-  # TODO: catch static incols and set their coldesc to something else
+  # catch static incols and set their coldesc to something else
   out$incoldesc <- if(out$as_is_col) '(static column)' else {
     out$colmeta$name};
   out$available <- flattenRules(incolid,obj$rules);
   out$divIDavailable <- paste0('avail-',incolid);
+  out$ccd_choices <- if(!out$as_is_col && 
+                        !is.null(out$colmeta$ccd_list)){
+    strsplit(out$colmeta$ccd_list,',')[[1]]} else NULL;
+  out$innerDivs <- lapply(out$available,function(xx){
+    xxsel<-if(xx$split_by_code && !is.null(out$ccd_choices)){
+      selid <- paste0('sel-',xx$own_name);
+      div(selectizeInput(selid,label='For the following codes:'
+                         ,choices=out$ccd_choices)
+          ,class='transform-argsel')} else span();
+    withHtmlTemplate(xx,templates$divavailable,xxsel=xxsel);
+  });
   out$divavailable <- withHtmlTemplate(
     out,templates$multidivavailable
-    ,innerDivs=lapply(out$available,withHtmlTemplate
-                      ,templates$divavailable));
+  );
+    # ,innerDivs=lapply(out$available,withHtmlTemplate
+    #                   ,templates$divavailable));
   # out$divavailable <- div(id=out$divIDavailable
   #                         ,lapply(out$available
   #                                 ,function(xx) {
@@ -279,6 +291,8 @@ shinyServer(function(input, output, session) {
     # This is the part that detects clicks on the Add/Update buttons
     # Have to wrap the expr argument in substitute because otherwise
     # it doesn't correctly read the ii value. Wierd.
+    
+    # TODO: prepend the selected code if the rule takes an argument
     isolate({for(ii in divIDs$addbid){
       ids <- subset(divIDs,addbid==ii);
       eval(substitute(onclick(xx
