@@ -23,6 +23,7 @@ shinyUI(fluidPage(
                             ,"text/comma-separated-values,text/plain"
                             ))
       ,actionButton('debug','Debug')
+      ,actionButton('btDumpcols','Column Info');
       ,div(id='debugval','Waiting for debug value...')
       )
 

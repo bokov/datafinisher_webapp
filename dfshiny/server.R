@@ -4,6 +4,20 @@ library(reticulate); library(readr);
 # load various useful stuff
 source('templates.R');
 
+dumpOutputCols <- function(id='dumpcols',...){
+  js <- sprintf("
+  oo = {};
+  $('[id^=chosen-]').map(function(){kk=this.id.replace('chosen-','');
+  vv=$(this).find('div').map(function(){return this.id}).get(); 
+  if(vv.length>0) oo[kk]=vv;});
+  Shiny.onInputChange('%s',oo);
+        ",id);
+  runjs(js);
+  sapply(names(input$dumpcols),function(ii) {
+    rv$dfinfolist[[ii]]$chosen[unlist(input$dumpcols[[ii]])]
+    },simplify=F);
+}
+
 # attach a proper index to a sortable input
 sortableWatcher<-function(targetid,inputid
                           ,selector='auto',event='sortupdate'){
@@ -23,9 +37,23 @@ sortableWatcher<-function(targetid,inputid
   runjs(js);
 }
 
-# TODO: For some reason the %in% input[[targetid]] stuff is flaky
-# still allows duplicate values. Might want to just look at 
-# names(rv$dfinfolist[[incol]]$chosen) and act solely on that.
+#' validNames: make sure a name is unique and has legal characters
+#'
+#' @param newname         string
+#' @param existingnames   character vector
+#' @param id              optional string, ID of a textInput
+#' @param session         current session (optional)
+#'
+#' @return uniquified name, with side effect of updating a textInput
+#'         if ID given
+validNames <- function(newname,existingnames=c(),id=NULL
+                       ,session=getDefaultReactiveDomain()){
+  name0 <- gsub('[_.]+','_',make.names(newname));
+  name1 <- tail(gsub('[_.]+','_',make.names(c(existingnames,name0)
+                                            ,unique=T)),1);
+  if(!is.null(id)) updateTextInput(session,id,value=name1);
+  return(name1);
+}    
 
 addChosen <- function(incolid,availableid,rv,input,finalid=availableid){
   delbid <- paste0('delb-',finalid);
@@ -45,17 +73,7 @@ addChosen <- function(incolid,availableid,rv,input,finalid=availableid){
   # add it to the chosen columns
   rv$dfinfolist[[incolid]]$chosen[[finalid]] <- payload;
   runjs(sprintf("$('%s').trigger('sortupdate')",finalid));
-  #browser();
-  # if(!finalid %in% input[[targetid]]){
-  #   insertUI(targetid,where='beforeEnd',immediate=T
-  #            ,ui=div(id=finalid,finalid
-  #                    ,actionButton(delbid,'Remove'
-  #                                  ,class='btn-danger'),br()
-  #                    ,span(payload$ruledesc,class='annotation')))
-  #   };
   onclick(delbid,removeChosen(incolid,finalid,rv));
-  #runjs(sprintf("$('%s').sortable('refresh')",finalid));
-  #runjs(sprintf("$('%s').trigger('sortupdate')",finalid));
 }
 
 removeChosen <- function(incolid,finalid,rv){
@@ -151,7 +169,10 @@ flattenRules <- function(incolid,rules){
 
 shinyServer(function(input, output, session) {
   
+  # load the stuff we need from datafinisher
   source_python('df_reticulate.py');
+  dfns <- py_run_string('from df_fn import shortenwords,dropletters'
+                        ,local=T);
   
   runjs("$('#customQB').on('hidden.bs.collapse',function(){
         Shiny.onInputChange('qbtest_out',null);
@@ -165,45 +186,7 @@ shinyServer(function(input, output, session) {
     ,orderInput('dest', 'Dest', items = NULL
                , placeholder = 'Drag items here...')
     ));
-  
-  filterlist <- list(
-     concept_cd=list(name = 'cc'
-                    , type = 'string'
-                    , input = 'selectize'
-                    , label = 'Concept Code (concept_cd)'
-                    , values=c()
-                    , criteria = quote(isTRUE(ccd > 1)))
-    ,modifier_cd=list(name = 'mc', type = 'string', input = 'text'
-                      ,label='Modifier Code (modifier_cd)'
-                      ,criteria=quote(isTRUE(mod > 0)))
-    ,instance_num=list(name='ix',type='integer'
-                       ,label='Instance Number (instance_num)'
-                       ,criteria=quote(isTRUE(mxinsts>1)))
-    ,valtype_cd=list(name = 'vt', type = 'string', input = 'text'
-                     ,label='Value Type (valtype_cd)'
-                     ,criteria=quote(isTRUE(valtype_cd>0)))
-    ,tval_char=list(name = 'tc', type = 'string', input = 'text'
-                    ,label='Text Val (tval_char)'
-                    ,criteria=quote(isTRUE(tval_char>0)))
-    ,nval_num=list(name='nv',type='double'
-                   ,label='Numeric Value (nval_num)'
-                   ,criteria=quote(isTRUE(nval_num>0)))
-    ,valueflag_cd=list(name = 'vf', type = 'string', input = 'text'
-                       ,label='Outside Reference Range (valueflag_cd)'
-                       ,criteria=quote(isTRUE(valueflag_cd>0)))
-    ,quantity_num=list(name='qt',type='double'
-                       ,label='Quantity (quantity_num)'
-                       ,criteria=quote(isTRUE(quantity_num>0)))
-    ,units_cd=list(name = 'un', type = 'string', input = 'text'
-                   ,label='Unit of Measure (units_cd)'
-                   ,criteria=quote(isTRUE(units_cd>0)))
-    ,location_cd=list(name = 'lc', type = 'string', input = 'text'
-                      ,label='Location Code (location_cd)'
-                      ,criteria=quote(isTRUE(location_cd>0)))
-    ,confidence_num=list(name='cf',type='double'
-                         ,label='Confidence Level (confidence_num)'
-                         ,criteria=quote(isTRUE(confidence_num>0))));
-  
+
   rvp <- reactiveValues();
   
   #onclick('makecustom',show('customui'));
@@ -357,13 +340,15 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
   
   # make sure custom rules have names that are safe, legal, 
   # and unique
-  observeEvent(input$customTrName,{
-    cleanedName <- gsub('[_.]+','_',make.names(input$customTrName));
-    updateTextInput(session,'customTrName'
-                    ,value=tail(gsub('[_.]+','_'
-                                     ,make.names(c(names(rvp$dfmeta$rules)
-                                                   ,cleanedName)
-                                                 ,unique = T)),1));
+  observeEvent(c(input$customTrName,input$customSave),{
+    validNames(input$customTrName,names(rvp$dfmeta$rules)
+               ,id='customTrName');
+    # cleanedName <- gsub('[_.]+','_',make.names(input$customTrName));
+    # updateTextInput(session,'customTrName'
+    #                 ,value=tail(gsub('[_.]+','_'
+    #                                  ,make.names(c(names(rvp$dfmeta$rules)
+    #                                                ,cleanedName)
+    #                                              ,unique = T)),1));
     });
   
   # offer a choice of columns from which to chose the ones that will have
@@ -495,7 +480,9 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
 
   observeEvent(input$customSave,{
     forincols <- input$customSelCols;
-    nametemplate<-paste0('{0}_',trname <- input$customTrName);
+    trname<-validNames(input$customTrName,names(rvp$dfmeta$rules)
+                       ,id='customTrName',session);
+    nametemplate<-paste0('{0}_',trname);
     # the save button should be disabled if the input is 
     # invalid, so if input$qbtest_out is null, that's because
     # the user has chosen not to filter
@@ -546,6 +533,10 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
         };
       });
   });
+  
+  observeEvent(input$btDumpcols,{
+    rv$dumpcols <- dumpOutputCols();
+  })
 
   observeEvent(input$debug,{
     req(rv$dfinfolist);
