@@ -1,6 +1,7 @@
 templates <- list(
 
- divavailable = '<div class="available-transform">{{own_name}}
+ divavailable = '<div class="available-transform panel panel-body panel-default">
+{{own_name}}
 <button class="btn action-button btn-success" id={{addbid}} type="button">Add/Update</button>{{xxsel}}<br/>
   <span class="annotation">{{ruledesc}}</span>
     </div>'
