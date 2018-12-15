@@ -570,11 +570,9 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
                          ,iivals<-with(iiavailable
                                ,c(parent_name,own_name,addbid
                                   ,paste0('chosen-',parent_name))));
+        browser();
         # instrument the Add/Update
-        onclick(addbid
-                ,addChosen(iivals$incolid[1]
-                           ,iivals$availableid[1]
-                           ,rv,input),add=T);
+        onclick(iivals[3],addChosen(iivals[1],iivals[2],rv,input),add=T);
         }
         
       });
