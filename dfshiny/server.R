@@ -36,7 +36,8 @@ addChosen <- function(incolid,availableid,rv,input,finalid=availableid){
                               ,list(own_name=finalid,delbid=delbid)));
   if(!finalid %in% names(rv$dfinfolist[[incolid]]$chosen)){
     insertUI(targetid,where='beforeEnd',immediate=T
-             ,ui=div(id=finalid,finalid
+             ,ui=div(id=finalid,class='panel panel-body panel-default'
+                     ,finalid
                      ,actionButton(delbid,'Remove'
                                    ,class='btn-danger'),br()
                      ,span(payload$ruledesc,class='annotation')))
@@ -106,34 +107,13 @@ cleanDFCols <- function(incolid,obj){
   out$divavailable <- withHtmlTemplate(
     out,templates$multidivavailable
   );
-    # ,innerDivs=lapply(out$available,withHtmlTemplate
-    #                   ,templates$divavailable));
-  # out$divavailable <- div(id=out$divIDavailable
-  #                         ,lapply(out$available
-  #                                 ,function(xx) {
-  #                                   with(xx
-  #                                        ,div(own_name
-  #                                             ,actionButton(addbid
-  #                                                           ,'Add/Update'
-  #                                                           ,class='btn btn-success')
-  #                                             ,br()
-  #                                             ,span(ruledesc
-  #                                                   ,class='annotation')
-  #                                             ))}
-  #                                 ));
+  
   out$divIDchosen <- paste0('chosen-',incolid);
   out$chosen <- list();
   out$incolid <- obj$name;
   out$incolui <- if(out$as_is_col) p() else {
     withHtmlTemplate(out,templates$incolui)};
-  # out$incolui <- if(out$as_is_col) p() else {
-  #   with(out
-  #        ,tagList(div(id=divIDchosen,tags$b('Chosen:'))
-  #                 ,div(id=divIDavilable,tags$b('Available:'),divavailable)))};
   out$divfull <- withHtmlTemplate(out,templates$divfull);
-  # out$divfull <- with(out,div(id=incolid,incolid,br()
-  #                             ,span(incoldesc,class='annotation')
-  #                             ,incolui));
   if(!out$as_is_col){
     jqui_sortable(ui=paste0('#',out$divIDchosen)
                   ,options=list(axis='y',items='div'))};
@@ -184,8 +164,6 @@ shinyServer(function(input, output, session) {
                 ,as_source = TRUE, connect = 'dest')
     ,orderInput('dest', 'Dest', items = NULL
                , placeholder = 'Drag items here...')
-    #,queryBuilderOutput('qbtest')
-    #verbatimTextOutput('order'))
     ));
   
   filterlist <- list(
@@ -321,12 +299,6 @@ shinyServer(function(input, output, session) {
         }
         });
     }
-    # Not quite working, but seems on the right track: making the static columns
-    # back to non-accordion
-    #
-    # for(ii in setdiff(names(rv$dfinfolist),rv$divIDs$incolid)) {
-    # runjs(sprintf("$('#%s').parent().removeClass('panel-collapse collapse in').parent().show()",ii))
-    # }
     runjs("$('.collapse').on('shown.bs.collapse', function (e) {
         Shiny.onInputChange('activecolid',($('.in>.panel-body>div').attr('id')));
     })")
@@ -339,6 +311,7 @@ shinyServer(function(input, output, session) {
     
     # populate the 'Transform Data' tab
     output[['tb_transform']] <- renderUI(isolate(rv$ui_transform));
+    
     # make the chosen divs sortable and register inputs
     for(ii in unique(divIDs$chosenid)){
       eval(substitute(sortableWatcher(ii)))};
@@ -518,22 +491,7 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
                      disable('customSave');
                    }
                    });
-  # present user with choice of fields
-  #output$customWhichFields <- renderUI({
-  #  req(rv$currentFilterlist);
- #  observeEvent(rv$currentFilterlist,{
- #    validchoices <- names(rv$currentFilterList);
- #    #if(length(rv$currentFilterList)==0) span() else {
- #    cat('\nUpdating customWhichFields with',validchoices,'\n');
- #    out <- selectizeInput('customSelFields'
- #                  ,label='Select the field or fields you wish this
- #                  transformation to return:',multiple=T
- #                  ,choices=validchoices);
- #      
- #  #});
- #    output$customWhichFields <- renderUI(out);
- # #     };
- #    });
+  
   observeEvent(input$customCancel,{
     # reset to empty values
     updateSelectizeInput(session,'customSelCols',selected=character(0));
@@ -577,7 +535,8 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
         rv$dfinfolist[[ii]]$available[[iiavailable$own_name]]<-iiavailable;
         # add to the available UI divs
         insertUI(paste0("#avail-",ii,">div"),'beforeEnd'
-                 , withHtmlTemplate(iiavailable,templates$divavailable)
+                 , withHtmlTemplate(iiavailable,templates$divavailable
+                                    ,xxsel=span())
                  ,immediate=T);
         # update the divIDs data.frame
         rv$divIDs<-rbind(rv$divIDs
@@ -586,9 +545,11 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
                                   ,paste0('chosen-',parent_name))));
         browser();
         # instrument the Add/Update
-        onclick(iivals[3],addChosen(iivals[1],iivals[2],rv,input),add=T);
-        }
-        
+        eval(substitute(onclick(iivals[3]
+                                ,addChosen(iivals[1]
+                                           ,iivals[2],rv,input),add=T)
+                        ,env=list(iivals=iivals)));
+        };
       });
   });
 
