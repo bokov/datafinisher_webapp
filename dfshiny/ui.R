@@ -24,20 +24,6 @@ shinyUI(fluidPage(
                             ))
       ,actionButton('debug','Debug')
       ,div(id='debugval','Waiting for debug value...')
-      # ,disabled(
-      #   # div(class='panel panel-primary',id='makecustom'
-      #   #             ,div(id='makecustom-heading'
-      #   #                  ,class='panel-heading collapsed',role='tab'
-      #   #                  ,`data-toggle`='collapse',`data-target`=)
-      #   tags$button(id='makecustom'
-      #               ,'Define custom filter for ',br()
-      #               ,span(class='activecolidtxt'
-      #                     ,'(none selected)')))
-      # ,hidden(div(id='customui'
-      #             ,"Custom filter for column "
-      #             ,span(class='activecolidtxt','(none selected)')
-      #             ,queryBuilderOutput('qbtest')
-      #             ))
       )
 
     # Preview
@@ -45,7 +31,6 @@ shinyUI(fluidPage(
       tabsetPanel(
          tabPanel(span('Debug',br())
                   ,uiOutput('test')
-                  #,queryBuilderOutput('qbtest')
                   )
         ,tabPanel(span('Transform',br(),'Columns')
                   ,uiOutput('tb_transform'))
