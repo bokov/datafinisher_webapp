@@ -4,7 +4,7 @@ library(reticulate); library(readr);
 # load various useful stuff
 source('templates.R');
 
-dumpOutputCols <- function(id='dumpcols',...){
+dumpOutputCols <- function(id='dumpcols',input=input,rv=rv,...){
   js <- sprintf("
   oo = {};
   $('[id^=chosen-]').map(function(){kk=this.id.replace('chosen-','');
@@ -13,6 +13,7 @@ dumpOutputCols <- function(id='dumpcols',...){
   Shiny.onInputChange('%s',oo);
         ",id);
   runjs(js);
+  cat('\n*** dumping column info ***\n');
   sapply(names(input$dumpcols),function(ii) {
     rv$dfinfolist[[ii]]$chosen[unlist(input$dumpcols[[ii]])]
     },simplify=F);
@@ -56,24 +57,43 @@ validNames <- function(newname,existingnames=c(),id=NULL
 }    
 
 addChosen <- function(incolid,availableid,rv,input,finalid=availableid){
-  delbid <- paste0('delb-',finalid);
-  targetid <- paste0('#chosen-',incolid);
   # create the data structure for the new output column
   incoldata <- rv$dfinfolist[[incolid]];
-  payload <- with(incoldata,c(available[[availableid]][c('extr','args','ruledesc','split_by_code','parent_name')]
-                              ,list(own_name=finalid,delbid=delbid)));
-  if(!finalid %in% names(rv$dfinfolist[[incolid]]$chosen)){
+  payload <- incoldata$available[[availableid]][c('extr','args','ruledesc'
+                                                  ,'split_by_code','colidtmpl'
+                                                  ,'parent_name','own_name')];
+  # derive needed IDs
+  targetid <- paste0('#chosen-',incolid);
+  selid <- paste0('sel-',finalid);
+  finalid <- gsub('\\{0\\}',incolid,payload$colidtmpl);
+  # if this is code-specific, append the selected codes
+  if(payload$split_by_code){
+    finalid <- paste0(finalid,'_',gsub('[^A-Za-z0-9_]','_'
+                                       ,paste(gsub('^.*:','',input[[selid]])
+                                              ,collapse='_')))};
+  payload$own_name <- finalid;
+  payload$delbid <- paste0('delb-',finalid);
+  # TODO: replace this with HTML template
+  if(!payload$own_name %in% names(rv$dfinfolist[[incolid]]$chosen)){
     insertUI(targetid,where='beforeEnd',immediate=T
-             ,ui=div(id=finalid,class='panel panel-body panel-default'
-                     ,finalid
-                     ,actionButton(delbid,'Remove'
-                                   ,class='btn-danger'),br()
-                     ,span(payload$ruledesc,class='annotation')))
-    }
+             ,ui=withHtmlTemplate(payload,templates$divchosen
+                                  ,delbutton=actionButton(payload$delbid
+                                                          ,'Remove'
+                                                          ,class='btn-danger'))
+             );
+    runjs(sprintf("$('%s').trigger('sortupdate')",finalid));
+    onclick(payload$delbid,removeChosen(incolid,payload$own_name,rv));
+  }
+             # ,ui=div(id=finalid,class='panel panel-body panel-default'
+             #         ,finalid
+             #         ,actionButton(delbid,'Remove'
+             #                       ,class='btn-danger'),br()
+             #         ,span(payload$ruledesc,class='annotation')))\
+  
+    #}
   # add it to the chosen columns
-  rv$dfinfolist[[incolid]]$chosen[[finalid]] <- payload;
-  runjs(sprintf("$('%s').trigger('sortupdate')",finalid));
-  onclick(delbid,removeChosen(incolid,finalid,rv));
+  rv$dfinfolist[[incolid]]$chosen[[payload$own_name]] <- payload;
+  
 }
 
 removeChosen <- function(incolid,finalid,rv){
@@ -343,24 +363,19 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
   observeEvent(c(input$customTrName,input$customSave),{
     validNames(input$customTrName,names(rvp$dfmeta$rules)
                ,id='customTrName');
-    # cleanedName <- gsub('[_.]+','_',make.names(input$customTrName));
-    # updateTextInput(session,'customTrName'
-    #                 ,value=tail(gsub('[_.]+','_'
-    #                                  ,make.names(c(names(rvp$dfmeta$rules)
-    #                                                ,cleanedName)
-    #                                              ,unique = T)),1));
     });
   
   # offer a choice of columns from which to chose the ones that will have
   # access to this transform. Only fields available in all these columns
   # will be options in the transform
-  output$customWhichCols <- renderUI(
+  output$customWhichCols <- renderUI({
+    req(rv$divIDs);
     if(input$choosewait==0){
       selectizeInput('customSelCols'
                      ,label='Select the main column or columns in your data for
                              which this transformation should be available:'
                      ,choices=unique(rv$divIDs$incolid),multiple=T)} else {
-                       span()});
+                       span()}});
   
   # when choice of columns changes, update the permitted list of variables
   observeEvent(c(input$customSelCols,input$customTrDesc),{
@@ -428,7 +443,7 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
               ,xx$name,xx$label))
     }
     runjs("$('#qbtest').queryBuilder('reset')");
-    })
+    });
   
   observeEvent(c(input$customSelFields,input$customTrDesc
                  ,input$qbtest_validate)
@@ -476,7 +491,7 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
     updateSelectizeInput(session,'customSelCols',selected=character(0));
     updateTextAreaInput(session,'customTrDesc',value='');
     updateTextInput(session,'customTrName',value = 'custom');
-  })
+  });
 
   observeEvent(input$customSave,{
     forincols <- input$customSelCols;
@@ -505,11 +520,15 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
       ,suggested=F
       ,extractors=list(list(trname,nametemplate,list()))
       );
+    # empty out description field
+    updateTextAreaInput(session,'customTrDesc',value='');
+    # TODO: why is everything after the description field automatically 
+    # cleared when "Save" is clicked? Useful, but troubling.
     isolate({
       # add to the master rules list
       rvp$dfmeta$rules[[trname]]<-transform;
       # for each eligible main column...
-      for (ii in forincols) {
+      for(ii in forincols) {
         # prepare it
         iiavailable <- flattenRules(ii,list(transform))[[1]];
         # insert it into the available list for that column
@@ -524,7 +543,6 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
                          ,iivals<-with(iiavailable
                                ,c(parent_name,own_name,addbid
                                   ,paste0('chosen-',parent_name))));
-        browser();
         # instrument the Add/Update
         eval(substitute(onclick(iivals[3]
                                 ,addChosen(iivals[1]
@@ -535,8 +553,9 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
   });
   
   observeEvent(input$btDumpcols,{
-    rv$dumpcols <- dumpOutputCols();
-  })
+    rv$dumpcols <- dumpOutputCols(input=input,rv=rv);
+    cat('\n***\n',names(rv$dumpcols),'\n***\n');
+  });
 
   observeEvent(input$debug,{
     req(rv$dfinfolist);
@@ -549,3 +568,4 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
   output$test <- renderUI({print('rendering test');rv$uitest});
 
 })
+
