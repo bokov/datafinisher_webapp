@@ -12,11 +12,13 @@ dumpOutputCols <- function(id='dumpcols',input=input,rv=rv,...){
   if(vv.length>0) oo[kk]=vv;});
   Shiny.onInputChange('%s',oo);
         ",id);
-  runjs(js);
+  runjs(js); runjs(js);
   cat('\n*** dumping column info ***\n');
   sapply(names(input$dumpcols),function(ii) {
     rv$dfinfolist[[ii]]$chosen[unlist(input$dumpcols[[ii]])]
     },simplify=F);
+  cat(jsonlite::toJSON(rv$dumpcols,pretty=1)
+      ,file=paste0('dumpcols_',as.numeric(Sys.time()),'.json'));
 }
 
 # attach a proper index to a sortable input
@@ -61,7 +63,8 @@ addChosen <- function(incolid,availableid,rv,input,finalid=availableid){
   incoldata <- rv$dfinfolist[[incolid]];
   payload <- incoldata$available[[availableid]][c('extr','args','ruledesc'
                                                   ,'split_by_code','colidtmpl'
-                                                  ,'parent_name','own_name')];
+                                                  ,'parent_name','own_name'
+                                                  ,'filter')];
   # derive needed IDs
   targetid <- paste0('#chosen-',incolid);
   selid <- paste0('sel-',finalid);
@@ -171,7 +174,7 @@ cleanDFCols <- function(incolid,obj){
 flattenRules <- function(incolid,rules){
   out <- list();
   for(ii in rules){
-    iiout <- ii[c('suggested','criteria','split_by_code','ruledesc')];
+    iiout <- ii[c('suggested','criteria','split_by_code','ruledesc','filter')];
     for(jj in ii$extractors){
       # make name
       jjid <- sprintf(gsub('\\{0\\}','%s',jj[2]),incolid);
