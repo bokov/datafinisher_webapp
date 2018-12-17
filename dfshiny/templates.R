@@ -17,6 +17,11 @@ templates <- list(
   {{incolui}}
 </div>
 '
+
+,divchosen ='<div id={{own_name}} class="panel panel-body panel-default">
+{{own_name}}{{delbutton}}<br/><span class="annotation">{{ruledesc}}</span>
+</div>
+'
 );
 
 filterlist <- list(
