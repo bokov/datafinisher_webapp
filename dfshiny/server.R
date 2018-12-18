@@ -58,13 +58,16 @@ validNames <- function(newname,existingnames=c(),id=NULL
   return(name1);
 }    
 
+# TODO: this is the next thing to fix !
 addChosen <- function(incolid,availableid,rv,input,finalid=availableid){
   # create the data structure for the new output column
   incoldata <- rv$dfinfolist[[incolid]];
-  payload <- incoldata$available[[availableid]][c('extr','args','ruledesc'
+  payload <- incoldata$rules[[availableid]][c('extr','args','ruledesc'
                                                   ,'split_by_code','colidtmpl'
-                                                  ,'parent_name','own_name'
+                                                  ,'parent_name','longname'
+                                                  ,'shortname'
                                                   ,'filter')];
+  browser();
   # derive needed IDs
   targetid <- paste0('#chosen-',incolid);
   selid <- paste0('sel-',finalid);
@@ -125,23 +128,31 @@ withHtmlTemplate <- function(env,template,...){
 #'
 #' @examples
 cleanDFCols <- function(incolid,obj){
-  obj <- obj[[incolid]]; out <- list();
-  for(ii in c('as_is_col','colmeta','dfcol','unique_codes')){
-    out[[ii]] <- obj[[ii]];
-  }
+  obj <- obj[[incolid]]; out <- list(); #out2 <- list();
+  # for(ii in c('as_is_col','colmeta','dfcol','unique_codes','incolid')){
+  #   out[[ii]] <- obj[[ii]];
+  # }
+  attrs <- names(obj);
+  attrs <- attrs[sapply(attrs,function(ii) mode(obj[[ii]]))!='function'];
+  for(ii in attrs) out[[ii]] <- obj[[ii]];
+  # stuff already done by DFCol
   # catch static incols and set their coldesc to something else
-  out$incoldesc <- if(out$as_is_col) '(static column)' else {
-    out$colmeta$name};
-  out$available <- flattenRules(incolid,obj$rules);
-  out$divIDavailable <- paste0('avail-',incolid);
-  out$ccd_choices <- if(!out$as_is_col && 
-                        !is.null(out$colmeta$ccd_list)){
-    strsplit(out$colmeta$ccd_list,',')[[1]]} else NULL;
-  out$innerDivs <- lapply(out$available,function(xx){
-    xxsel<-if(xx$split_by_code && !is.null(out$ccd_choices)){
-      selid <- paste0('sel-',xx$own_name);
-      div(selectizeInput(selid,label='For the following codes:'
-                         ,choices=out$ccd_choices)
+  # out$incoldesc <- if(out$as_is_col) '(static column)' else {
+  #   out$colmeta$name};
+  # out$available <- flattenRules(incolid,obj$rules);
+  # out$divIDavailable <- paste0('avail-',incolid);
+  # out$divIDchosen <- paste0('chosen-',incolid);
+  # if(!out$as_is_col) browser();
+  # out$ccd_choices <- if(!out$as_is_col && 
+  #                       !is.null(out$colmeta$ccd_list)){
+  #   strsplit(out$colmeta$ccd_list,',')[[1]]} else NULL;
+  # R-specific starts
+  out$innerDivs <- lapply(out$rules,function(xx){
+    xxsel<-if(xx$split_by_code && !is.null(out$unique_codes) && 
+              out$unique_codes!=''){
+      #selid <- paste0('sel-',xx$own_name);
+      div(selectizeInput(xx$selid,label='For the following codes:'
+                         ,choices=out$unique_codes)
           ,class='transform-argsel')} else span();
     withHtmlTemplate(xx,templates$divavailable,xxsel=xxsel);
   });
@@ -149,9 +160,8 @@ cleanDFCols <- function(incolid,obj){
     out,templates$multidivavailable
   );
   
-  out$divIDchosen <- paste0('chosen-',incolid);
   out$chosen <- list();
-  out$incolid <- obj$name;
+  #out$incolid <- obj$name;
   out$incolui <- if(out$as_is_col) p() else {
     withHtmlTemplate(out,templates$incolui)};
   out$divfull <- withHtmlTemplate(out,templates$divfull);
@@ -258,16 +268,26 @@ shinyServer(function(input, output, session) {
     #                                                ,function(yy)yy$addbid)
     #                                 ,stringsAsFactors = F)},simplify=F));
     # baseline button values ...no longer needed?
-    isolate({divIDs <- setNames(data.frame(t(do.call(
-      cbind,sapply(rv$dfinfolist,function(xx) {
-        if (length(xx$available)>0){
-                              sapply(xx$available,function(yy) {
-                                with(yy
-                                     ,cbind(parent_name,own_name
-                                            ,addbid))})
-                              }}))),stringsAsFactors = F)
-      ,c('incolid','availableid','addbid'));
-    divIDs$chosenid <- paste0('chosen-',divIDs$incolid);
+    divIDs <- c()
+    isolate({
+      for(xx in rv$dfinfolist) if(length(xx$rules)>0) for(yy in xx$rules) {
+        divIDs<-rbind(divIDs,with(yy
+                                  ,data.frame(incolid=parent_name,longname,shortname
+                                              ,addbid,selid
+                                              ,divIDavailable=xx$divIDavailable
+                                              ,divIDchosen=xx$divIDchosen
+                                              ,stringsAsFactors=F)))};
+    #   divIDs <- try(setNames(data.frame(t(do.call(
+    #   cbind,sapply(rv$dfinfolist,function(xx) {
+    #     if (length(xx$available)>0){
+    #                           sapply(xx$available,function(yy) {
+    #                             with(yy
+    #                                  ,cbind(parent_name,own_name
+    #                                         ,addbid))})
+    #                           }}))),stringsAsFactors = F)
+    #   ,c('incolid','availableid','addbid')));
+    # if(class(divIDs)[1]=='try-error') browser();
+    # divIDs$chosenid <- paste0('chosen-',divIDs$incolid);
     });
     
     message('\n*** divIDs created ***\n');
@@ -277,11 +297,11 @@ shinyServer(function(input, output, session) {
     # it doesn't correctly read the ii value. Wierd.
     
     # TODO: prepend the selected code if the rule takes an argument
-    isolate({for(ii in divIDs$addbid){
+    isolate({for(ii in unique(divIDs$addbid)){
       ids <- subset(divIDs,addbid==ii);
       eval(substitute(onclick(xx
                               ,addChosen(yy$incolid[1]
-                                         ,yy$availableid[1]
+                                         ,yy$divIDavailable[1]
                                          ,rv,input)
                               ,add=T),env=list(xx=ii,yy=ids)))};
     });
@@ -338,7 +358,7 @@ shinyServer(function(input, output, session) {
         eval(substitute(sortableWatcher(ii)))};
       print('Running sortableWatcher');
       runjs("
-if( $('[id^=chosen-].ui-sortable').length == 0 ) {
+if( $('[id^=c-].ui-sortable').length == 0 ) {
   xx = + new Date() } else {
     /* This is where we track the currenly opened column panel */
     $('.collapse').on('shown.bs.collapse', function (e) {
@@ -535,7 +555,7 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
         # prepare it
         iiavailable <- flattenRules(ii,list(transform))[[1]];
         # insert it into the available list for that column
-        rv$dfinfolist[[ii]]$available[[iiavailable$own_name]]<-iiavailable;
+        rv$dfinfolist[[ii]]$rules[[iiavailable$longname]]<-iiavailable;
         # add to the available UI divs
         insertUI(paste0("#avail-",ii,">div"),'beforeEnd'
                  , withHtmlTemplate(iiavailable,templates$divavailable
