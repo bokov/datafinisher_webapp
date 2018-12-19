@@ -30,10 +30,11 @@ shinyUI(fluidPage(
     # Preview
     ,mainPanel(
       tabsetPanel(
-         tabPanel(span('Debug',br())
-                  ,uiOutput('test')
-                  )
-        ,tabPanel(span('Transform',br(),'Columns')
+        #  tabPanel(span('Debug',br())
+        #           ,uiOutput('test')
+        #           )
+        # ,
+        tabPanel(span('Transform',br(),'Columns')
                   ,uiOutput('tb_transform'))
         ,tabPanel(span('Custom',br(),'Transforms')
                   # transform name
