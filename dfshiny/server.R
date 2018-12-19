@@ -251,6 +251,21 @@ shinyServer(function(input, output, session) {
     # Now we have a sample data-file!
     rvp$dfmeta <- py$DFMeta(names(dat),as.character(dat[1,])
                             ,suggestions=py$autosuggestor);
+    # testing out processing within main
+    py$inhead <- r_to_py(names(dat),convert = T);
+    py$inmeta <- r_to_py(as.character(dat[1,]),convert = T);
+    
+    # The following works perfectly!
+    py_run_string('dfmeta=DFMeta(inhead,inmeta,suggestions=autosuggestor)');
+    # all.equal(rvp$dfmeta,py$dfmeta)
+    # all.equal(py$dfmeta['v122_Acqrd_absnc']
+    # ,py$dfmeta2$incols[['v122_Acqrd_absnc']])
+    # 
+    # These work too:
+    # with(py$dfmeta['v122_Acqrd_absnc']$getDict(),div(id=incolid))
+    # So, cleanDFCols should now only need to generate HTML based on variables
+    # sent to it (and it should be renamed accordingly)
+    
     message('\n*** dfmeta created ***\n');
     
     # data for populating UI and recording choices
@@ -586,7 +601,7 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
     t_dat <- rv$dfinfolist[[t_incolid]];
     
     browser();
-  });
+  # });
   
   output$test <- renderUI({print('rendering test');rv$uitest});
 
