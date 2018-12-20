@@ -58,6 +58,10 @@ validNames <- function(newname,existingnames=c(),id=NULL
   return(name1);
 }    
 
+addChosen2 <- function(incolid,input){
+  obj <- py$dfmeta[incolid]$getDict();
+}
+
 # TODO: this is the next thing to fix !
 addChosen <- function(incolid,availableid,rv,input,finalid=availableid){
   # create the data structure for the new output column
@@ -127,6 +131,20 @@ withHtmlTemplate <- function(env,template,...){
 #' @return list
 #'
 #' @examples
+buildDFCols <- function(incolid){
+  # apparently py magically just shows up in scope without being passed
+  obj <- py$dfmeta[incolid]$getDict();
+  out <- list();
+  innerDivs <- lapply(obj$rules,function(xx){
+    xxsel <- if (xx$split_by_code && length(obj$unique_codes)>1){
+      div(class='transform-argsel'
+          ,selectizeInput(xx$selid,label='For the following codes:'
+                          ,choices=obj$unique_codes))} else span();
+    withHtmlTemplate(xx,templates$divavailable,xxsel=xxsel);
+    });
+  withHtmlTemplate(obj,templates$multidivavailable,innerDivs=innerDivs)
+}
+#' 
 cleanDFCols <- function(incolid,obj){
   obj <- obj[[incolid]]; out <- list(); #out2 <- list();
   # for(ii in c('as_is_col','colmeta','dfcol','unique_codes','incolid')){
