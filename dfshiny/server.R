@@ -601,7 +601,7 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
     t_dat <- rv$dfinfolist[[t_incolid]];
     
     browser();
-  # });
+   });
   
   output$test <- renderUI({print('rendering test');rv$uitest});
 
