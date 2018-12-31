@@ -1,7 +1,7 @@
 /* To make the available columns scroll inside the page */
 #tb_transform{
   overflow-y: scroll;
-  height: 800px;
+  height: 550px;
 }
 
 
