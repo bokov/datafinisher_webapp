@@ -12,7 +12,7 @@ dumpOutputCols <- function(id='dumpcols',input=input,rv=rv,...){
   if(vv.length>0) oo[kk]=vv;});
   Shiny.onInputChange('%s',oo);
         ",id);
-  runjs(js); runjs(js);
+  runjs(js); 
   cat('\n*** dumping column info ***\n');
   sapply(names(input$dumpcols),function(ii) {
     rv$dfinfolist[[ii]]$chosen[unlist(input$dumpcols[[ii]])]
@@ -128,7 +128,7 @@ buildDFCols <- function(incolid){
   out0 <- lapply(obj$rules,function(xx){
     xxsel <- if (xx$split_by_code && length(obj$unique_codes)>1){
       div(class='transform-argsel'
-          ,selectizeInput(xx$selid,label='For the following codes:'
+          ,selectizeInput(xx$selid,multiple=T,label='For the following codes:'
                           ,choices=obj$unique_codes))} else span();
     withHtmlTemplate(xx,templates$divavailable,xxsel=xxsel);
     });
