@@ -133,7 +133,7 @@ buildDFCols <- function(incolid){
     withHtmlTemplate(xx,templates$divavailable,xxsel=xxsel);
     });
   out1 <- withHtmlTemplate(obj,templates$multidivavailable,innerDivs=out0);
-  out2 <- if(obj$as_is_col) p() else{
+  out2 <- if(obj$as_is_col) span() else{
     withHtmlTemplate(obj,templates$incolui,divavailable=out1)};
   out3 <- withHtmlTemplate(obj,templates$divfull,incolui=out2);
   if(!obj$as_is_col){
