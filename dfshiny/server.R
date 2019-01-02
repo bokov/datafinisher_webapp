@@ -58,23 +58,36 @@ validNames <- function(newname,existingnames=c(),id=NULL
   return(name1);
 }    
 
-addChosen2 <- function(chosenid,incolid,rv){
-  obj <- py$dfmeta[incolid]$getDict();
-  browser();
-  # needed info:
-    # * selid-modified outcol name
-    # * delbid
-    # * which main column?
-    # ? name to be added to R chosen list
-    # targetid (#c-)
-    # OK longname
-    # OK ruledesc
-    # 
-  # check if inserted
+addChosen <- function(incolid,availableid,userArgs=list(),input,...){
+  obj <- py$dfmeta[incolid];
+  # add object. If it already exists in the python backend, it 
+  # will overwrite/update the existing values and return NULL 
+  # If it doesn't already exist, it will return a list with all
+  # the values needed to create the HTML below
+  
+  # First, obtain the user input if it exists
+  # TODO: disable the accompanying Add/Update button if selectize is empty
+  if(missing(userArgs)){
+    userArgs <- list(input[[obj$rules[[availableid]]$selid]])};
+  
+  objinfo <- obj$prepChosen(obj$rules[[availableid]],userArgs=userArgs);
+  if(!is.null(objinfo)){
+    insertUI(paste0('#',objinfo$divIDchosen),where='beforeEnd',immediate=T
+             ,ui=withHtmlTemplate(objinfo,templates$divchosen
+                                  # create a button specifically for removing
+                                  # the HTML being created here
+                                  ,delbutton=actionButton(objinfo$delbid
+                                                          ,'Remove'
+                                                          ,class='btn-danger'))
+    );
+    runjs(sprintf("$('%s').trigger('sortupdate')",objinfo$divIDchosen));
+    onclick(objinfo$delbid
+            ,removeChosen(objinfo$parent_name,objinfo$shortname,rv));
+  }
 }
 
 # TODO: this is the next thing to fix !
-addChosen <- function(incolid,availableid,rv,input,finalid=availableid){
+addChosen_old <- function(incolid,availableid,rv,input,finalid=availableid){
   # create the data structure for the new output column
   incoldata <- rv$dfinfolist[[incolid]];
   payload <- incoldata$rules[[availableid]]
@@ -98,14 +111,23 @@ addChosen <- function(incolid,availableid,rv,input,finalid=availableid){
                                                           ,class='btn-danger'))
              );
     runjs(sprintf("$('%s').trigger('sortupdate')",finalid));
-    onclick(payload$delbid,removeChosen(incolid,payload$longname,rv));
+    onclick(payload$delbid,removeChosen_old(incolid,payload$longname,rv));
   }
   # add it to the chosen columns
   rv$dfinfolist[[incolid]]$chosen[[payload$longname]] <- payload;
   
 }
 
-removeChosen <- function(incolid,finalid,rv){
+removeChosen <- function(incolid,finalid,...){
+  finalid <- gsub('^#','',finalid);
+  obj <- py$dfmeta[incolid];
+  obj$chosen[[finalid]] <- NULL;
+  finalid <- paste0('#',finalid);
+  #runjs(sprintf("$('%s').trigger('sortupdate')",finalid));
+  removeUI(finalid,immediate = T);
+}
+
+removeChosen_old <- function(incolid,finalid,rv){
   finalid <- gsub('^#','',finalid);
   rv$dfinfolist[[incolid]]$chosen[[finalid]]<-NULL;
   # turning finalid back into an #id selector
@@ -286,7 +308,8 @@ shinyServer(function(input, output, session) {
     isolate({
       for(xx in rv$dfinfolist) if(length(xx$rules)>0) for(yy in xx$rules) {
         divIDs<-rbind(divIDs,with(yy
-                                  ,data.frame(incolid=parent_name,longname,shortname
+                                  ,data.frame(incolid=parent_name
+                                              ,longname,shortname
                                               ,addbid,selid
                                               ,divIDavailable=xx$divIDavailable
                                               ,divIDchosen=xx$divIDchosen
@@ -313,7 +336,7 @@ shinyServer(function(input, output, session) {
                                   ,childids=c('rulename','addbid')
                                   ,childtype='rules')){
       eval(substitute(
-        onclick(addbid,addChosen(incolid,rulename,rv,input),add=T)
+        onclick(addbid,addChosen(incolid,rulename,rv=rv,input=input),add=T)
         ,env=xx));
     }
     message('\n*** addbid onclicks created ***\n');
@@ -603,7 +626,7 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
         # instrument the Add/Update
         eval(substitute(onclick(iivals[3]
                                 ,addChosen(iivals[1]
-                                           ,iivals[2],rv,input),add=T)
+                                           ,iivals[2],rv=rv,input=input),add=T)
                         ,env=list(iivals=iivals)));
         };
       });
