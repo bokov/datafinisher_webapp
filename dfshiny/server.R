@@ -82,7 +82,7 @@ addChosen <- function(incolid,availableid,userArgs=list(),input,...){
     );
     runjs(sprintf("$('%s').trigger('sortupdate')",objinfo$divIDchosen));
     onclick(objinfo$delbid
-            ,removeChosen(objinfo$parent_name,objinfo$shortname,rv));
+            ,removeChosen(objinfo$parent_name,objinfo$longname,rv));
   }
 }
 
@@ -120,11 +120,13 @@ addChosen_old <- function(incolid,availableid,rv,input,finalid=availableid){
 
 removeChosen <- function(incolid,finalid,...){
   finalid <- gsub('^#','',finalid);
-  obj <- py$dfmeta[incolid];
-  obj$chosen[[finalid]] <- NULL;
-  finalid <- paste0('#',finalid);
+  remtarget <- paste0('#',py$dfmeta[incolid]$chosen[[finalid]]$shortname)
+  py$dfmeta[incolid]$unprepChosen(finalid);
+  #py$dfmeta$incols[[incolid]]$chosen[[finalid]] <- NULL;
+  #obj$chosen[[finalid]] <- NULL;
+  #finalid <- paste0('#',finalid);
   #runjs(sprintf("$('%s').trigger('sortupdate')",finalid));
-  removeUI(finalid,immediate = T);
+  removeUI(remtarget,immediate = T);
 }
 
 removeChosen_old <- function(incolid,finalid,rv){
