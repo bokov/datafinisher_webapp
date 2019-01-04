@@ -146,10 +146,15 @@ withHtmlTemplate <- function(env,template,...){
 }
 
 # create the starting UI elements for the available columns
-buildDFCols <- function(incolid){
+buildDFCols <- function(incolid,rulenames=T){
   # apparently py magically just shows up in scope without being passed
   obj <- py$dfmeta[incolid]$getDict();
-  out0 <- lapply(obj$rules,function(xx){
+  if(missing(rulenames)) myrules <- obj$rules else {
+    myrules <- try(obj$rules[rulenames])
+    if(class(myrules)[0] == 'try-error'){
+      print('Uh oh, list subsetting problem');
+      browser();}}
+  out0 <- lapply(myrules,function(xx){
     xxsel <- if (xx$split_by_code && length(obj$unique_codes)>1){
       div(class='transform-argsel'
           ,selectizeInput(xx$selid,multiple=T,label='For the following codes:'
@@ -230,9 +235,8 @@ shinyServer(function(input, output, session) {
   
   # load the stuff we need from datafinisher
   source_python('df_reticulate.py');
-  dfns <- py_run_string('from df_fn import shortenwords,dropletters'
-                        ,local=T);
-  
+  py_run_string('from df_fn import shortenwords,dropletters')
+
   runjs("$('#customQB').on('hidden.bs.collapse',function(){
         Shiny.onInputChange('qbtest_out',null);
         Shiny.onInputChange('qbtest_validate',true);
@@ -573,42 +577,39 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
     updateTextAreaInput(session,'customTrDesc',value='');
     updateTextInput(session,'customTrName',value = 'custom');
   });
-
+  
+  # When the save button is pressed on Custom Transforms tab
   observeEvent(input$customSave,{
-    forincols <- input$customSelCols;
-    trname<-validNames(input$customTrName,names(rvp$dfmeta$rules)
+    rulesuffix<-validNames(input$customTrName,names(py$dfmeta$rules)
                        ,id='customTrName',session);
-    nametemplate<-paste0('{0}_',trname);
     # the save button should be disabled if the input is 
     # invalid, so if input$qbtest_out is null, that's because
     # the user has chosen not to filter
-    filter <- if(is.null(input$qbtest_out)||length(input$qbtest_out$rules)==0){
-      "TRUE";
-    } else {
-      queryBuilder:::recurseFilter(input$qbtest_out);
-    }
-    transform <- list(
-       extr=trname
-      ,colidtmpl=nametemplate
-      ,ruledesc=input$customTrDesc
-      ,fields=input$customSelFields
-      ,aggregate=input$customAggregate
-      ,filter=filter
-      # compatibility
-      ,args=NA
-      ,criteria=sprintf("colid %%in%% %s",paste(forincols,collapse=','))
-      ,split_by_code=F
-      ,suggested=F
-      ,extractors=list(list(trname,nametemplate,list()))
+    selector <- if(is.null(input$qbtest_out)||length(input$qbtest_out$rules)==0){
+      "ALL";
+    } else input$qbtest_out;
+    newrule <- list(
+        ruledesc=input$customTrDesc
+       ,criteria=sprintf("colid in ['%s']"
+                         ,paste0(input$customSelCols,collapse="','"))
+       ,split_by_code=F
+       ,selector=selector
+       ,fieldlist=input$customSelFields
+       ,aggregator=input$customAggregate
+       ,rulesuffix=rulesuffix
       );
     # empty out description field
     updateTextAreaInput(session,'customTrDesc',value='');
     # TODO: why is everything after the description field automatically 
     # cleared when "Save" is clicked? Useful, but troubling.
+    
+    newRules <- py$dfmeta$userDesignedRule(newrule,'FOO',input$customSelCols);
     browser();
+    # TODO: modify buildDFCols() so that it can iterate over individual columns
+    # and rules, returning HTML
     isolate({
       # add to the master rules list
-      rvp$dfmeta$rules[[trname]]<-transform;
+      #rvp$dfmeta$rules[[trname]]<-transform;
       # for each eligible main column...
       for(ii in forincols) {
         # prepare it
