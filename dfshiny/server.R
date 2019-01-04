@@ -68,7 +68,7 @@ addChosen <- function(incolid,availableid,userArgs=list(),input,...){
   # First, obtain the user input if it exists
   # TODO: disable the accompanying Add/Update button if selectize is empty
   if(missing(userArgs)){
-    userArgs <- list(input[[obj$rules[[availableid]]$selid]])};
+    userArgs <- list(CC=input[[obj$rules[[availableid]]$selid]])};
   
   objinfo <- obj$prepChosen(obj$rules[[availableid]],userArgs=userArgs);
   if(!is.null(objinfo)){
