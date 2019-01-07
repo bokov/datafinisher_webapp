@@ -94,10 +94,6 @@ removeChosen <- function(incolid,finalid,...){
   finalid <- gsub('^#','',finalid);
   remtarget <- paste0('#',py$dfmeta[incolid]$chosen[[finalid]]$shortname)
   py$dfmeta[incolid]$unprepChosen(finalid);
-  #py$dfmeta$incols[[incolid]]$chosen[[finalid]] <- NULL;
-  #obj$chosen[[finalid]] <- NULL;
-  #finalid <- paste0('#',finalid);
-  #runjs(sprintf("$('%s').trigger('sortupdate')",finalid));
   removeUI(remtarget,immediate = T);
 }
 
@@ -196,7 +192,6 @@ flattenRules <- function(incolid,rules){
 # End flattenRules ----
 
 shinyServer(function(input, output, session) {
-  
   # server init ----
   # load the stuff we need from datafinisher
   source_python('df_reticulate.py');
@@ -380,6 +375,7 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
   
   # when choice of columns changes, update the permitted list of variables
   observeEvent(c(input$customSelCols,input$customTrDesc),{
+    browser();
     applicable <- T; out <- filterlist;
     for(ii in input$customSelCols){
       applicable <- applicable & sapply(filterlist,function(xx) {
@@ -398,7 +394,6 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
     }
     validchoices<-names(rv$currentFilterlist <- out[applicable]);
     print('Updated rv$currentFilterList');
-    
     ready <- !is.null(input$customTrDesc) && input$customTrDesc != '' &&
       !is.null(input$customSelCols) && input$customSelCols != '';
     if(ready & length(validchoices)==0) {
@@ -523,8 +518,6 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
     # TODO: modify buildDFCols() so that it can iterate over individual columns
     # and rules, returning HTML
     isolate({
-      # add to the master rules list
-      #rvp$dfmeta$rules[[trname]]<-transform;
       # for each eligible main column...
       for(ii in forincols) {
         # prepare it
