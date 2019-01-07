@@ -353,10 +353,10 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
   
   # make sure custom rules have names that are safe, legal, 
   # and unique
-  observeEvent(c(input$customTrName,input$customSave),{
-    validNames(input$customTrName,names(py$dfmeta$rules)
-               ,id='customTrName');
-    });
+  observeEvent(c(input$customTrName,input$customSave,input$infile),{
+    if('dfmeta' %in% names(py)){
+      validNames(input$customTrName,names(py$dfmeta$rules),id='customTrName');
+    }});
   
   # offer a choice of columns from which to select ones that will have
   # access to this transform. Only fields available in all these columns
@@ -375,7 +375,6 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
   
   # when choice of columns changes, update the permitted list of variables
   observeEvent(c(input$customSelCols,input$customTrDesc),{
-    browser();
     applicable <- T; out <- filterlist;
     for(ii in input$customSelCols){
       applicable <- applicable & sapply(filterlist,function(xx) {
