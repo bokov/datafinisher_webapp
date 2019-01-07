@@ -128,38 +128,6 @@ buildDFCols <- function(incolid,rulenames=T){
   out3;
 }
 
-# flattenRules ----
-#' flattenRules: take a rules list and make each
-#' rule a flat named list so the overall nesting 
-#' max depth is 2
-#'
-#' @param incolid: char, name of parent dfcol
-#' @param rules: named list
-#'
-#' @return list
-#'
-#' @examples
-flattenRules <- function(incolid,rules){
-  out <- list();
-  for(ii in rules){
-    iiout <- ii[c('suggested','criteria','split_by_code','ruledesc','filter')];
-    for(jj in ii$extractors){
-      # make name
-      jjid <- sprintf(gsub('\\{0\\}','%s',jj[2]),incolid);
-      # flatten and merge
-      jjout <- as.list(setNames(jj[1:3],c('extr','colidtmpl','args')));
-      jjout$addbid <- paste('addb',jjout$extr,jjid,sep='-');
-      jjout$parent_name <- incolid;
-      jjout$own_name<- jjid;
-      # assign
-      out[[jjid]]<-c(jjout,iiout);
-    }
-  }
-  out;
-}
-
-# End flattenRules ----
-
 shinyServer(function(input, output, session) {
   # server init ----
   # load the stuff we need from datafinisher
