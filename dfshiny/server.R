@@ -40,6 +40,7 @@ sortableWatcher<-function(targetid,inputid
   #print(js);
   runjs(js);
 }
+
 addChosen <- function(incolid,availableid,userArgs=list(),input,...){
   obj <- py$dfmeta[incolid];
   # add object. If it already exists in the python backend, it 
@@ -130,7 +131,8 @@ validNames <- function(newname #,existingnames=c()
   # name1 <- tail(gsub('[_.]+','_',make.names(c(existingnames,name0)
   #                                           ,unique=T)),1);
   #outname <- py$makeTailUnq(tolower(py$ob2tag(newname)),names(py$dfmeta$rules))
-    #py$dfmeta$makeSffxUnq(newname,sep='',maxlen=int(8),pad=int(2))
+  #py$dfmeta$makeSffxUnq(newname,sep='',maxlen=int(8),pad=int(2))
+  
   outname <- py$dfmeta$makeNameUnq(newname,'rulename',maxlen=int(12))
   if(!is.null(id)) updateTextInput(session,id,value=outname);
   return(outname);
@@ -154,6 +156,7 @@ shinyServer(function(input, output, session) {
     ,orderInput('dest', 'Dest', items = NULL
                , placeholder = 'Drag items here...')
     ));
+  
   
   # Renders a sample of the uploaded data and as a 
   # side effect creates the UI for manipulating it.
@@ -273,7 +276,7 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
   # custom rule names ----
   # make sure custom rules have names that are safe, legal, 
   # and unique
-  observeEvent(c(debounce(input$customTrName,millis=1000),input$infile),{
+  observeEvent(c(input$customTrName,input$infile),{
     req(rv$have_dfmeta);
     validNames(input$customTrName,id='customTrName');
     });
@@ -402,7 +405,6 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
                      disable('customSave');
                    }
                    });
-  
   # If cancel pressed on custom rule tab, reset to empty values
   observeEvent(input$customCancel,{
     updateSelectizeInput(session,'customSelCols',selected=character(0));
@@ -415,8 +417,8 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
     # customSave ----
     # rulesuffix<-validNames(input$customTrName,names(py$dfmeta$rules)
     #                    ,id='customTrName',session);
-    rulesuffix <- py$dfmeta$makeNameUnq(input$customTrName);
     rulename <- validNames(input$customTrName,id='customTrName');
+    #rulesuffix <- py$ob2tag(input$customTrName);
     # the save button should be disabled if the input is 
     # invalid, so if input$qbtest_out is null, that's because
     # the user has chosen not to filter
@@ -424,34 +426,41 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
       "ALL";
     } else input$qbtest_out;
     newrule <- list(
-        rulename=rulename
-       ,ruledesc=input$customTrDesc
-       # ,criteria=sprintf("colid in ['%s']"
-       #                   ,paste0(input$customSelCols,collapse="','"))
-       ,split_by_code=F
-       ,selector=selector
-       ,fieldlist=input$customSelFields
-       ,aggregator=input$customAggregate
-       ,custom=T
-       ,rulesuffix=rulesuffix
-      );
+      rulename=rulename
+      ,ruledesc=input$customTrDesc
+      ,split_by_code=F
+      ,selector=selector
+      ,fieldlist=input$customSelFields
+      ,aggregator=input$customAggregate
+      ,custom=T
+    );
     # Add the newly created rules to dfmeta and turn the output (captured 
     # inline as newinfo) into HTML (the newdivs final output in this chain)
     newdivs <- lapply(newinfo<-py$dfmeta$userDesignedRule(
       newrule,rulename,as.list(input$customSelCols))
       ,buildRule,unique_codes=c());
-    for(ii in names(newinfo)){
+    rv$newdivs <- newdivs; rv$newinfo <- newinfo;
+  });
+  
+  # Populate the new divs, new info created in Custom Transforms
+  observeEvent(c(rv$newdivs,rv$newinfo),{
+    # BUG: Somewhere in this loop something is not being properly updated.
+    # The individual incols' rules have distinct rulesuffix, rulename,
+    # shortname, and longname values. Yet, if suffixes are similar, the trailing
+    # numbers get repeated instead of being unique.
+    for(ii in names(rv$newinfo)){
       # insert the new div
       insertUI(paste0('#',py$dfmeta[ii]$divIDavailable,'>div')
-               ,'beforeEnd',newdivs[[ii]],immediate = T);
+               ,'beforeEnd',rv$newdivs[[ii]],immediate = T);
       # add onclick event to allow actually adding/removing this rule
       eval(substitute(onclick(addbid
                               ,addChosen(parent_name,rulename,rv=rv,input=input)
-                              ,add=T),env=newinfo[[ii]]));
-      };
+                              ,add=T),env=rv$newinfo[[ii]]));
+    };
     # empty out description field and selectizeinput fields
     runjs("$('#customCancel').click()");
   });
+
   
   # Save the user-controlled parts of the current UI state
   # to internal variable (currently for testing, in the future might be the
@@ -460,7 +469,8 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
     rv$dumpcols <- dumpOutputCols(input=input,rv=rv);
     cat('\n***\n',names(rv$dumpcols),'\n***\n');
   });
-
+  
+  
 # Testing ----
   observeEvent(input$debug,{
     browser();
