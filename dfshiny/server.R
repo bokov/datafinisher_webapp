@@ -40,29 +40,6 @@ sortableWatcher<-function(targetid,inputid
   #print(js);
   runjs(js);
 }
-# validNames ----
-#' validNames: make sure a name is unique and has legal characters
-#'
-#' @param newname         string
-#' @param existingnames   character vector
-#' @param id              optional string, ID of a textInput
-#' @param session         current session (optional)
-#'
-#' @return uniquified name, with side effect of updating a textInput
-#'         if ID given
-validNames <- function(newname,existingnames=c(),id=NULL
-                       ,session=getDefaultReactiveDomain()){
-  name0 <- gsub('[_.]+','_',make.names(newname));
-  name1 <- tail(gsub('[_.]+','_',make.names(c(existingnames,name0)
-                                            ,unique=T)),1);
-  if(!is.null(id)) updateTextInput(session,id,value=name1);
-  return(name1);
-}    
-
-
-
-# End validNames ----
-
 addChosen <- function(incolid,availableid,userArgs=list(),input,...){
   obj <- py$dfmeta[incolid];
   # add object. If it already exists in the python backend, it 
@@ -103,7 +80,8 @@ withHtmlTemplate <- function(env,template,...){
   do.call(htmlTemplate,env);
 }
 
-# create the starting UI elements for the available columns
+# create the starting UI elements for an incol 
+# (calls buildRule for individual available rules)
 buildDFCols <- function(incolid,rulenames=T){
   # apparently py magically just shows up in scope without being passed
   obj <- py$dfmeta[incolid]$getDict();
@@ -112,22 +90,54 @@ buildDFCols <- function(incolid,rulenames=T){
     if(class(myrules)[0] == 'try-error'){
       print('Uh oh, list subsetting problem');
       browser();}}
-  out0 <- lapply(myrules,function(xx){
-    xxsel <- if (xx$split_by_code && length(obj$unique_codes)>1){
-      div(class='transform-argsel'
-          ,selectizeInput(xx$selid,multiple=T,label='For the following codes:'
-                          ,choices=obj$unique_codes))} else span();
-    withHtmlTemplate(xx,templates$divavailable,xxsel=xxsel);
-    });
+  out0 <- lapply(myrules,buildRule,unique_codes=obj$unique_codes);
   out1 <- withHtmlTemplate(obj,templates$multidivavailable,innerDivs=out0);
   out2 <- if(obj$as_is_col) span() else{
     withHtmlTemplate(obj,templates$incolui,divavailable=out1)};
   out3 <- withHtmlTemplate(obj,templates$divfull,incolui=out2);
   if(!obj$as_is_col){
-    jqui_sortable(ui=paste0('#',obj$divIDchosen),options=list(axis='y',items='div'))};
+    jqui_sortable(ui=paste0('#',obj$divIDchosen)
+                  ,options=list(axis='y',items='div'))};
   out3;
 }
 
+# Build an 'available' div for a single rule
+buildRule <- function(rule,unique_codes,rulename,incolid
+                      ,selclass='transform-argsel'
+                      ,sellab='For the following codes:'
+                      ,template=templates$divavailable){
+  if(missing(rule)) rule <- py$dfmeta[incolid]$rules[rulename];
+  if(missing(unique_codes)) {
+    unique_codes <- py$dfmeta[rule$parent_name]$unique_codes;}
+  rsel <- if(rule$split_by_code && length(unique_codes)>1){
+    div(class=selclass,selectizeInput(rule$selid,multiple=T,label=sellab
+                                      ,choices=unique_codes))} else span();
+  withHtmlTemplate(rule,template,xxsel=rsel)
+}
+
+# validNames ----
+#' validNames: make sure a name is unique and has legal characters
+#'
+#' @param newname         string
+#' @param id              optional string, ID of a textInput
+#' @param session         current session (optional)
+#'
+#' @return uniquified name, with side effect of updating a textInput
+#'         if ID given
+validNames <- function(newname #,existingnames=c()
+                       ,id,session=getDefaultReactiveDomain()){
+  # name0 <- gsub('[_.]+','_',make.names(newname));
+  # name1 <- tail(gsub('[_.]+','_',make.names(c(existingnames,name0)
+  #                                           ,unique=T)),1);
+  #outname <- py$makeTailUnq(tolower(py$ob2tag(newname)),names(py$dfmeta$rules))
+    #py$dfmeta$makeSffxUnq(newname,sep='',maxlen=int(8),pad=int(2))
+  outname <- py$dfmeta$makeNameUnq(newname,'rulename',maxlen=int(12))
+  if(!is.null(id)) updateTextInput(session,id,value=outname);
+  return(outname);
+}    
+# End validNames ----
+
+# shinyServer ----
 shinyServer(function(input, output, session) {
   # server init ----
   # load the stuff we need from datafinisher
@@ -144,7 +154,6 @@ shinyServer(function(input, output, session) {
     ,orderInput('dest', 'Dest', items = NULL
                , placeholder = 'Drag items here...')
     ));
-  
   
   # Renders a sample of the uploaded data and as a 
   # side effect creates the UI for manipulating it.
@@ -237,6 +246,7 @@ shinyServer(function(input, output, session) {
     return(head(dat[-1,],100));
   });
   
+  # Wait for the divIDchosen to load and then make them sortable
   observeEvent(input$choosewait,{
     print('Checking choosewait');
     if(input$choosewait!=0){
@@ -260,11 +270,12 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
     xx = 0}; Shiny.onInputChange('choosewait',xx);");};
   });
   
+  # custom rule names ----
   # make sure custom rules have names that are safe, legal, 
   # and unique
-  observeEvent(c(input$customTrName,input$customSave,input$infile),{
+  observeEvent(c(debounce(input$customTrName,millis=1000),input$infile),{
     req(rv$have_dfmeta);
-    validNames(input$customTrName,names(py$dfmeta$rules),id='customTrName');
+    validNames(input$customTrName,id='customTrName');
     });
   
   # offer a choice of columns from which to select ones that will have
@@ -350,6 +361,7 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
     runjs("$('#qbtest').queryBuilder('reset')");
     });
   
+  # update aggregator selection widget
   observeEvent(c(input$customSelFields,input$customTrDesc
                  ,input$qbtest_validate)
                ,{
@@ -391,8 +403,8 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
                    }
                    });
   
+  # If cancel pressed on custom rule tab, reset to empty values
   observeEvent(input$customCancel,{
-    # reset to empty values
     updateSelectizeInput(session,'customSelCols',selected=character(0));
     updateTextAreaInput(session,'customTrDesc',value='');
     updateTextInput(session,'customTrName',value = 'custom');
@@ -400,8 +412,11 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
   
   # When the save button is pressed on Custom Transforms tab
   observeEvent(input$customSave,{
-    rulesuffix<-validNames(input$customTrName,names(py$dfmeta$rules)
-                       ,id='customTrName',session);
+    # customSave ----
+    # rulesuffix<-validNames(input$customTrName,names(py$dfmeta$rules)
+    #                    ,id='customTrName',session);
+    rulesuffix <- py$dfmeta$makeNameUnq(input$customTrName);
+    rulename <- validNames(input$customTrName,id='customTrName');
     # the save button should be disabled if the input is 
     # invalid, so if input$qbtest_out is null, that's because
     # the user has chosen not to filter
@@ -409,42 +424,33 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
       "ALL";
     } else input$qbtest_out;
     newrule <- list(
-        ruledesc=input$customTrDesc
-       ,criteria=sprintf("colid in ['%s']"
-                         ,paste0(input$customSelCols,collapse="','"))
+        rulename=rulename
+       ,ruledesc=input$customTrDesc
+       # ,criteria=sprintf("colid in ['%s']"
+       #                   ,paste0(input$customSelCols,collapse="','"))
        ,split_by_code=F
        ,selector=selector
        ,fieldlist=input$customSelFields
        ,aggregator=input$customAggregate
+       ,custom=T
        ,rulesuffix=rulesuffix
       );
-    # empty out description field
-    updateTextAreaInput(session,'customTrDesc',value='');
-    # TODO: why is everything after the description field automatically 
-    # cleared when "Save" is clicked? Useful, but troubling.
-    
-    # TODO: modify buildDFCols() so that it can iterate over individual columns
-    # and rules, returning HTML
-    isolate({
-      # for each eligible main column...
-      for(ii in forincols) {
-        # prepare it
-        #iiavailable <- flattenRules(ii,list(transform))[[1]];
-        # insert it into the available list for that column
-        # rv$dfinfolist is being phased out, commenting out below
-        #rv$dfinfolist[[ii]]$rules[[iiavailable$longname]]<-iiavailable;
-        # add to the available UI divs
-        insertUI(paste0("#avail-",ii,">div"),'beforeEnd'
-                 , withHtmlTemplate(iiavailable,templates$divavailable
-                                    ,xxsel=span())
-                 ,immediate=T);
-        # instrument the Add/Update
-        eval(substitute(onclick(iivals[3]
-                                ,addChosen(iivals[1]
-                                           ,iivals[2],rv=rv,input=input),add=T)
-                        ,env=list(iivals=iivals)));
-        };
-      });
+    # Add the newly created rules to dfmeta and turn the output (captured 
+    # inline as newinfo) into HTML (the newdivs final output in this chain)
+    newdivs <- lapply(newinfo<-py$dfmeta$userDesignedRule(
+      newrule,rulename,as.list(input$customSelCols))
+      ,buildRule,unique_codes=c());
+    for(ii in names(newinfo)){
+      # insert the new div
+      insertUI(paste0('#',py$dfmeta[ii]$divIDavailable,'>div')
+               ,'beforeEnd',newdivs[[ii]],immediate = T);
+      # add onclick event to allow actually adding/removing this rule
+      eval(substitute(onclick(addbid
+                              ,addChosen(parent_name,rulename,rv=rv,input=input)
+                              ,add=T),env=newinfo[[ii]]));
+      };
+    # empty out description field and selectizeinput fields
+    runjs("$('#customCancel').click()");
   });
   
   # Save the user-controlled parts of the current UI state
@@ -460,7 +466,7 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
     browser();
    });
   
-  output$test <- renderUI({print('rendering test');rv$uitest});
+  #output$test <- renderUI({print('rendering test');rv$uitest});
 
 })
 
