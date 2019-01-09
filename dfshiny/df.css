@@ -28,3 +28,12 @@
   padding-left: 10px;
   vertical-align: middle;
 }
+
+/* To make the Input Data and Output Preview contents more compact */
+.dataTable>tbody>tr>td {
+  line-height: 5px;
+  white-space: nowrap;
+  max-width: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
