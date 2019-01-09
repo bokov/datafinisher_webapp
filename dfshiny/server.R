@@ -187,7 +187,8 @@ shinyServer(function(input, output, session) {
     # create dfmeta ----
     py$inhead <- r_to_py(names(dat),convert = T);
     py$inmeta <- r_to_py(as.character(dat[1,]),convert = T);
-    py_run_string('dfmeta=DFMeta(inhead,inmeta,suggestions=autosuggestor)');
+    py_run_string('dfmeta=DFMeta(inhead=inhead,inmeta=inmeta
+                  ,suggestions=autosuggestor)');
     rv$have_dfmeta <- T;
     message('\n*** dfmeta created ***\n');
     
