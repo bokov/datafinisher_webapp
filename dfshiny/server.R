@@ -407,9 +407,10 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
                    });
   # If cancel pressed on custom rule tab, reset to empty values
   observeEvent(input$customCancel,{
+    updateSelectizeInput(session,'customSelFields',selected=character(0));
     updateSelectizeInput(session,'customSelCols',selected=character(0));
     updateTextAreaInput(session,'customTrDesc',value='');
-    updateTextInput(session,'customTrName',value = 'custom');
+    validNames('custom',id='customTrName');
   });
   
   # When the save button is pressed on Custom Transforms tab
