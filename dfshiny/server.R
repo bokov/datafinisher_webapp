@@ -157,41 +157,64 @@ shinyServer(function(input, output, session) {
                , placeholder = 'Drag items here...')
     ));
   
+  # create dfmeta ----
+  observeEvent(input$infile,{
+    req(input$infile$datapath);
+    py_run_string(sprintf("dfmeta=DFMeta(fref='%s',suggestions=autosuggestor)"
+                          ,input$infile$datapath));
+    rv$have_dfmeta <- Sys.time();
+    message('\n*** dfmeta created ***\n');
+  });
   
+  
+  # read input data ----
   # Renders a sample of the uploaded data and as a 
   # side effect creates the UI for manipulating it.
   # TODO: Find a way to trigger the processing without
   #       having to click this tab.
   output$tb_infile_prev <- renderDataTable({
-    
-    # read input data ----
+    req(rv$have_dfmeta);
+    # TODO: temporary, will create simpler py-side method
+    py_run_string('dfmeta.fhandle.seek(0)');
+    dat<-read_delim(py_eval('dfmeta.fhandle.read(1024000)')
+                    ,py$dfmeta$data$dialect$delimiter,n_max=500);
+    # return a sample of the input for the 'Input Data' tab
+    message('\n*** dat loaded ***\n');
+    return(head(dat[-1,],100));
     # Don't attempt to produce output until file exists
-    req(input$infile);
-    # Peek at the file type. If it's CSV, use read_csv()
-    if(input$infile$type == 'text/csv'){
-      dat <- read_csv(input$infile$datapath,n_max=1000)
-    } else {
-      # If not csv, assume tab-delimited and *try* 
-      # read_tsv()
-      dat <- try(read_tsv(input$infile$datapath,n_max=1000))
-      # if there was an error or there is only one
-      # column in the result, assume we guessed wrong
-      # and fail over to using read_csv() after all
-      # TODO: more general guessing of delimiters or
-      #       optional user-supplied delimiters
-      if(is(dat,'try-error')||ncol(dat)==1){
-        dat <- read_csv(input$infile$datapath,n_max=1000);
-      };
-    }
+    # req(input$infile);
+    # # Peek at the file type. If it's CSV, use read_csv()
+    # if(input$infile$type == 'text/csv'){
+    #   dat <- read_csv(input$infile$datapath,n_max=1000)
+    # } else {
+    #   # If not csv, assume tab-delimited and *try* 
+    #   # read_tsv()
+    #   dat <- try(read_tsv(input$infile$datapath,n_max=1000))
+    #   # if there was an error or there is only one
+    #   # column in the result, assume we guessed wrong
+    #   # and fail over to using read_csv() after all
+    #   # TODO: more general guessing of delimiters or
+    #   #       optional user-supplied delimiters
+    #   if(is(dat,'try-error')||ncol(dat)==1){
+    #     dat <- read_csv(input$infile$datapath,n_max=1000);
+    #   };
+    # }
     
-    # create dfmeta ----
-    py$inhead <- r_to_py(names(dat),convert = T);
-    py$inmeta <- r_to_py(as.character(dat[1,]),convert = T);
-    py_run_string('dfmeta=DFMeta(inhead=inhead,inmeta=inmeta
-                  ,suggestions=autosuggestor)');
-    rv$have_dfmeta <- T;
-    message('\n*** dfmeta created ***\n');
-    
+    # py$inhead <- r_to_py(names(dat),convert = T);
+    # py$inmeta <- r_to_py(as.character(dat[1,]),convert = T);
+    # py_run_string('dfmeta=DFMeta(inhead=inhead,inmeta=inmeta
+    #               ,suggestions=autosuggestor)');
+    # py_run_string(sprintf("dfmeta=DFMeta(fref='%s',suggestions=autosuggestor)"
+    #                       ,input$infile$datapath));
+    # rv$have_dfmeta <- T;
+    # message('\n*** dfmeta created ***\n');
+  });
+
+  outputOptions(output,'tb_infile_prev',suspendWhenHidden=F);
+  
+  # populate the 'Transform Data' tab ----
+  output$tb_transform <- renderUI({
+    req(rv$have_dfmeta)
     # create startingdivs ----
     # Just the column divs, as built by buildDFCols
     rv$dfstartingdivs <- sapply(py$dfmeta$inhead,buildDFCols,simplify=F);
@@ -234,22 +257,16 @@ shinyServer(function(input, output, session) {
     
     # update outputs ----
     # Populate the ui_transform, needed by the 'Transform Data' panel
-    rv$ui_transform <- div(infodivs,id='infodivs_parent');
+    ui_transform <- div(infodivs,id='infodivs_parent');
     message('\n*** ui_transform created ***\n');
-    
-    # populate the 'Transform Data' tab
-    output[['tb_transform']] <- renderUI(isolate(rv$ui_transform));
     
     runjs("Shiny.onInputChange('choosewait',+ new Date())");
     
     # set output options so stuff starts rendering before tab active
-    outputOptions(output,'tb_infile_prev',suspendWhenHidden=F);
-    outputOptions(output,'tb_transform',suspendWhenHidden=F);
-    
-    # return a sample of the input for the 'Input Data' tab
-    return(head(dat[-1,],100));
+    ui_transform;
   });
-  
+  outputOptions(output,'tb_transform',suspendWhenHidden=F);
+
   # Wait for the divIDchosen to load and then make them sortable
   observeEvent(input$choosewait,{
     print('Checking choosewait');
@@ -277,7 +294,7 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
   # custom rule names ----
   # make sure custom rules have names that are safe, legal, 
   # and unique
-  observeEvent(c(input$customTrName,input$infile),{
+  observeEvent(c(input$customTrName,input$infile,rv$have_dfmeta),{
     req(rv$have_dfmeta);
     validNames(input$customTrName,id='customTrName');
     });
