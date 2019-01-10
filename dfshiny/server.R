@@ -263,7 +263,7 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
       selectizeInput('customSelCols'
                      ,label='Select the main column or columns in your data for
                              which this transformation should be available:'
-                     ,choices=unlist(py$dfmeta$getColIDs(ids='incolid'))
+                     ,choices=sort(unlist(py$dfmeta$getColIDs(ids='incolid')))
                      ,multiple=T)} else {
                        span()}});
   
