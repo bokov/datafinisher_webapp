@@ -116,28 +116,13 @@ buildRule <- function(rule,unique_codes,rulename,incolid
   withHtmlTemplate(rule,template,xxsel=rsel)
 }
 
-# validNames ----
 #' validNames: make sure a name is unique and has legal characters
-#'
-#' @param newname         string
-#' @param id              optional string, ID of a textInput
-#' @param session         current session (optional)
-#'
-#' @return uniquified name, with side effect of updating a textInput
-#'         if ID given
 validNames <- function(newname #,existingnames=c()
                        ,id,session=getDefaultReactiveDomain()){
-  # name0 <- gsub('[_.]+','_',make.names(newname));
-  # name1 <- tail(gsub('[_.]+','_',make.names(c(existingnames,name0)
-  #                                           ,unique=T)),1);
-  #outname <- py$makeTailUnq(tolower(py$ob2tag(newname)),names(py$dfmeta$rules))
-  #py$dfmeta$makeSffxUnq(newname,sep='',maxlen=int(8),pad=int(2))
-  
   outname <- py$dfmeta$makeNameUnq(newname,'rulename',maxlen=int(12))
   if(!is.null(id)) updateTextInput(session,id,value=outname);
   return(outname);
 }    
-# End validNames ----
 
 # shinyServer ----
 shinyServer(function(input, output, session) {
@@ -168,10 +153,7 @@ shinyServer(function(input, output, session) {
   
   
   # read input data ----
-  # Renders a sample of the uploaded data and as a 
-  # side effect creates the UI for manipulating it.
-  # TODO: Find a way to trigger the processing without
-  #       having to click this tab.
+  # Renders a sample of the uploaded data  
   output$tb_infile_prev <- renderDataTable({
     req(rv$have_dfmeta);
     # TODO: temporary, will create simpler py-side method
@@ -181,33 +163,6 @@ shinyServer(function(input, output, session) {
     # return a sample of the input for the 'Input Data' tab
     message('\n*** dat loaded ***\n');
     return(head(dat[-1,],100));
-    # Don't attempt to produce output until file exists
-    # req(input$infile);
-    # # Peek at the file type. If it's CSV, use read_csv()
-    # if(input$infile$type == 'text/csv'){
-    #   dat <- read_csv(input$infile$datapath,n_max=1000)
-    # } else {
-    #   # If not csv, assume tab-delimited and *try* 
-    #   # read_tsv()
-    #   dat <- try(read_tsv(input$infile$datapath,n_max=1000))
-    #   # if there was an error or there is only one
-    #   # column in the result, assume we guessed wrong
-    #   # and fail over to using read_csv() after all
-    #   # TODO: more general guessing of delimiters or
-    #   #       optional user-supplied delimiters
-    #   if(is(dat,'try-error')||ncol(dat)==1){
-    #     dat <- read_csv(input$infile$datapath,n_max=1000);
-    #   };
-    # }
-    
-    # py$inhead <- r_to_py(names(dat),convert = T);
-    # py$inmeta <- r_to_py(as.character(dat[1,]),convert = T);
-    # py_run_string('dfmeta=DFMeta(inhead=inhead,inmeta=inmeta
-    #               ,suggestions=autosuggestor)');
-    # py_run_string(sprintf("dfmeta=DFMeta(fref='%s',suggestions=autosuggestor)"
-    #                       ,input$infile$datapath));
-    # rv$have_dfmeta <- T;
-    # message('\n*** dfmeta created ***\n');
   });
 
   outputOptions(output,'tb_infile_prev',suspendWhenHidden=F);
@@ -434,13 +389,7 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
   # When the save button is pressed on Custom Transforms tab
   observeEvent(input$customSave,{
     # customSave ----
-    # rulesuffix<-validNames(input$customTrName,names(py$dfmeta$rules)
-    #                    ,id='customTrName',session);
     rulename <- validNames(input$customTrName,id='customTrName');
-    #rulesuffix <- py$ob2tag(input$customTrName);
-    # the save button should be disabled if the input is 
-    # invalid, so if input$qbtest_out is null, that's because
-    # the user has chosen not to filter
     selector <- if(is.null(input$qbtest_out)||length(input$qbtest_out$rules)==0){
       "ALL";
     } else input$qbtest_out;
@@ -463,10 +412,6 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
   
   # Populate the new divs, new info created in Custom Transforms
   observeEvent(c(rv$newdivs,rv$newinfo),{
-    # BUG: Somewhere in this loop something is not being properly updated.
-    # The individual incols' rules have distinct rulesuffix, rulename,
-    # shortname, and longname values. Yet, if suffixes are similar, the trailing
-    # numbers get repeated instead of being unique.
     for(ii in names(rv$newinfo)){
       # insert the new div
       insertUI(paste0('#',py$dfmeta[ii]$divIDavailable,'>div')
@@ -494,8 +439,5 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
   observeEvent(input$debug,{
     browser();
    });
-  
-  #output$test <- renderUI({print('rendering test');rv$uitest});
-
 })
 
