@@ -1,9 +1,9 @@
 /* site-wide UT-ish branding */
 body {font-family: "Open Sans",Trebuchet,sans-serif;}
 .panel-primary,.panel-collapse>.panel-body{
-  border-color: rgb(134, 56, 19) !important; }
-a { color: #C0511B; font-weight: 600;}
-a:hover { color: rgb(134, 56, 19);}
+  border-color: #008c99 !important; }
+a { color: #008c99; font-weight: 600;}
+a:hover { color: #004067;}
 .container-fluid>.row {
   color: #C0511B;
   /*background-color: white;*/
@@ -54,7 +54,7 @@ label {color: black; font-weight: 400; text-align: justify;}
 .panel-heading {
   padding-top: 2px; 
   padding-bottom: 2px;
-  background-color: #C0511B !important;
+  background-color: #008c99 !important;
 }
 
 /* To make the available columns scroll inside the page */
@@ -83,8 +83,14 @@ label {color: black; font-weight: 400; text-align: justify;}
 .panel-collapse hr {margin: 8px 0 5px 0}
 
 
-/* Tabs themselves*/
+/* Tabs themselves more compact*/
 .nav { margin-bottom: 8px;}
+ul.nav>li>a {
+  padding: 4px 12px;
+  line-height: 100%; 
+  text-align: center;
+}
+
 
 /* make buttons more compact */
 .btn {
