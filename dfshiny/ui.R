@@ -78,6 +78,6 @@ shinyUI(fluidPage(
                   )
         ,tabPanel(span('Terms of',br(),'Use'),termsofuse)
         )
-        # end tabsetpanel ----
+    # end tabsetpanel ----
        ))
 ))
