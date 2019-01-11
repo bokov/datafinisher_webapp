@@ -14,15 +14,17 @@ consequences of your use of it.";
 
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
-  includeCSS('df.css')
+  tags$head(tags$link(rel="shortcut icon", href="favicon.ico"))
+  ,includeCSS('df.css')
   ,useShinyjs()
   
   # Application title
   #,titlePanel("Datafinisher WebApp")
   
   ,fluidRow(
-     column(2,h3("Datafinisher WebApp",id='apptitle'))
-    ,column(4,fileInput("infile", "Choose CSV File"
+     column(1,img(src='sitelogo_color.png',width='45px'))
+    ,column(2,h3("Datafinisher WebApp",id='apptitle'))
+    ,column(4,fileInput("infile", "Choose CSV File..."
             ,multiple = FALSE,width = '400px'
             ,accept = c("text/csv","text/tsv",".csv",".tsv"
                         ,".tab",".txt"
@@ -41,16 +43,16 @@ shinyUI(fluidPage(
                   ,dataTableOutput('tb_infile_prev'))
         ,tabPanel(span('Transform',br(),'Columns')
                   ,uiOutput('tb_transform'))
-        ,tabPanel(span('Custom',br(),'Transforms')
+        ,tabPanel(span('Customize',br(),'Transforms')
                   # transform name
                   ,textInput('customTrName'
                              ,'Choose a name for your transformation'
-                             ,'custom')
+                             ,'custom',width='80vh')
                   # description
                   ,textAreaInput('customTrDesc'
                                  ,'Please write a brief description of what you
                                    intend for your custom column transformation
-                                   to be (required)')
+                                   to be (required)',width='80vh')
                   # multi-select columns
                   ,uiOutput('customWhichCols')
                   # fields to return
