@@ -1,7 +1,8 @@
 /* To make the available columns scroll inside the page */
 #tb_transform{
   overflow-y: scroll;
-  height: 550px;
+  min-height: 0;
+  height: 70vh;
 }
 
 
@@ -20,7 +21,28 @@
   background-color: whitesmoke;
 }
 
+/* The next few are to line up the page header */
+#apptitle {
+  margin-top: 0;
+  padding-top: 0;
+}
 
+.row {margin-bottom: 10px;}
+
+#infile_ui>.shiny-input-container {
+  margin-top: 2px;
+  padding-bottom: 0;
+}
+
+#infile_progress,#apptitle,#infile_ui>.shiny-input-container { 
+  margin-bottom: 0; 
+}
+
+#debug_button {padding-top: 25px;}
+/* end page header */
+
+/* Tabs themselves*/
+.nav { margin-bottom: 8px;}
 
 /* To line up the selection widgets for available transforms*/
 .transform-argsel {
