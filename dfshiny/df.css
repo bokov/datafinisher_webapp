@@ -11,10 +11,7 @@ a:hover { color: rgb(134, 56, 19);}
 }
 
 /* header in accordance with UT header styling */
-h3 {
-  font-family: "Cardo", "Times New Roman", serif;
-  margin-left: -20px; 
-}
+h3 {font-family: "Cardo", "Times New Roman", serif;}
 
 /* The next few are to line up the page header */
 #apptitle {
