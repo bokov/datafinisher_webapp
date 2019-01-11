@@ -12,15 +12,10 @@ patterns in order to improve the usability of this app; and 3) that you will
 hold the author and deployer of this app harmless in the event of any adverse 
 consequences of your use of it.");
 
-# Define UI for application that draws a histogram
 shinyUI(fluidPage(
   tags$head(tags$link(rel="shortcut icon", href="favicon.ico"))
   ,includeCSS('df.css')
   ,useShinyjs()
-  
-  # Application title
-  #,titlePanel("Datafinisher WebApp")
-  
   ,fluidRow(
      column(1,img(src='sitelogo_color.png',width='45px'))
     ,column(2,h3("Datafinisher WebApp",id='apptitle'))
@@ -83,5 +78,6 @@ shinyUI(fluidPage(
                   )
         ,tabPanel(span('Terms of',br(),'Use'),termsofuse)
         )
+        # end tabsetpanel ----
        ))
 ))
