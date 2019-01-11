@@ -2,6 +2,16 @@ library(shiny);library(shinyjs);library(queryBuilder);
 
 options(shiny.maxRequestSize=50*1024^2);
 
+termsofuse <- "
+This WebApp is provided for free as-is without guarantee of suitability for any 
+purpose whatsoever. By uploading a data file to it your agreeing to the 
+following: 1) you have sole responsibility for insuring that you are permitted 
+by law and your institution's policies to process your data through this app;
+2) that the author or deployer of this app may track and analyze your usage 
+patterns in order to improve the usability of this app; and 3) that you will 
+hold the author and deployer of this app harmless in the event of any adverse 
+consequences of your use of it.";
+
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
   includeCSS('df.css')
@@ -25,6 +35,7 @@ shinyUI(fluidPage(
   # ,div(id='debugval','Waiting for debug value...')
   ,mainPanel(width=12,id='maintabs'
     # tabsetPanel ----
+      ,div(id='termsofuse',termsofuse)
       ,hidden(tabsetPanel(
         tabPanel(span('Input',br(),'Data')
                   ,dataTableOutput('tb_infile_prev'))
@@ -68,6 +79,7 @@ shinyUI(fluidPage(
                   # cancel
                   ,actionButton('customCancel','Cancel')
                   )
+        ,tabPanel(span('Terms of',br(),'Use'),termsofuse)
         )
        ))
 ))

@@ -149,6 +149,7 @@ shinyServer(function(input, output, session) {
                           ,input$infile$datapath));
     # Indicator for the rest of the webapp that the core object is ready
     rv$have_dfmeta <- Sys.time();
+    hide('termsofuse');
     message('\n*** dfmeta created ***\n');
   });
   
