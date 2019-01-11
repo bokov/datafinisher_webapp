@@ -8,33 +8,27 @@ shinyUI(fluidPage(
   ,useShinyjs()
   
   # Application title
-  ,titlePanel("Datafinisher WebApp")
+  #,titlePanel("Datafinisher WebApp")
   
-  # Sidebar 
-  ,sidebarLayout(
-    
-    sidebarPanel(width=3
-      
-      ,fileInput("infile", "Choose CSV File"
-                ,multiple = FALSE,width = '200px'
-                ,accept = c("text/csv","text/tsv",".csv",".tsv"
-                            ,".tab",".txt"
-                            ,"text/tab-separated-values,text/plain"
-                            ,"text/comma-separated-values,text/plain"
-                            ))
-      ,actionButton('debug','Debug')
-      ,actionButton('btDumpcols','Column Info')
-      ,div(id='debugval','Waiting for debug value...')
-      )
-
-    # Preview
-    ,mainPanel(
-      tabsetPanel(
-        #  tabPanel(span('Debug',br())
-        #           ,uiOutput('test')
-        #           )
-        # ,
-        tabPanel(span('Transform',br(),'Columns')
+  ,fluidRow(
+     column(2,h3("Datafinisher WebApp",id='apptitle'))
+    ,column(3,fileInput("infile", "Choose CSV File"
+            ,multiple = FALSE,width = '200px'
+            ,accept = c("text/csv","text/tsv",".csv",".tsv"
+                        ,".tab",".txt"
+                        ,"text/tab-separated-values,text/plain"
+                        ,"text/comma-separated-values,text/plain"
+            )),id='infile_ui')
+    ,column(1,actionButton('debug','Debug'),id='debug_button')
+  )
+  # ,actionButton('btDumpcols','Column Info')
+  # ,div(id='debugval','Waiting for debug value...')
+  ,mainPanel(width=12,id='maintabs'
+    # tabsetPanel ----
+      ,hidden(tabsetPanel(
+        tabPanel(span('Input',br(),'Data')
+                  ,dataTableOutput('tb_infile_prev'))
+        ,tabPanel(span('Transform',br(),'Columns')
                   ,uiOutput('tb_transform'))
         ,tabPanel(span('Custom',br(),'Transforms')
                   # transform name
@@ -74,14 +68,6 @@ shinyUI(fluidPage(
                   # cancel
                   ,actionButton('customCancel','Cancel')
                   )
-        ,tabPanel(span('Input',br(),'Data')
-                  ,dataTableOutput('tb_infile_prev'))
         )
-      )
-    )
-#   ,tags$script("
-# document.getElementById('infodivs').onclick = function(){
-# Shiny.onInputChange('selectedinfodiv',document.getElementsByClassName('in')[0].getElementsByClassName('shiny-input-container')[0].id)
-# }
-#               ")
+       ))
 ))
