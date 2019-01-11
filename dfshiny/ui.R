@@ -35,7 +35,10 @@ shinyUI(fluidPage(
       ,div(id='termsofuse',termsofuse)
       ,hidden(tabsetPanel(
         tabPanel(span('Input',br(),'Data')
-                  ,dataTableOutput('tb_infile_prev'))
+                 ,conditionalPanel(condition="$('html').hasClass('shiny-busy')",
+                                   div("Reading your file, please wait..."
+                                       ,id="loading_message"))
+                 ,dataTableOutput('tb_infile_prev'))
         ,tabPanel(span('Transform',br(),'Columns')
                   ,uiOutput('tb_transform'))
         ,tabPanel(span('Customize',br(),'Transforms')
