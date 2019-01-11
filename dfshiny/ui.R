@@ -22,8 +22,8 @@ shinyUI(fluidPage(
   
   ,fluidRow(
      column(2,h3("Datafinisher WebApp",id='apptitle'))
-    ,column(3,fileInput("infile", "Choose CSV File"
-            ,multiple = FALSE,width = '200px'
+    ,column(4,fileInput("infile", "Choose CSV File"
+            ,multiple = FALSE,width = '400px'
             ,accept = c("text/csv","text/tsv",".csv",".tsv"
                         ,".tab",".txt"
                         ,"text/tab-separated-values,text/plain"

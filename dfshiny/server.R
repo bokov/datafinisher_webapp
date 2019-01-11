@@ -175,6 +175,7 @@ shinyServer(function(input, output, session) {
     req(rv$have_dfmeta)
     # create startingdivs ----
     # Just the column divs, as built by buildDFCols
+    # This is the slowest step
     rv$dfstartingdivs <- sapply(py$dfmeta$inhead,buildDFCols,simplify=F);
     message('\n*** dfstartingdivs created ***\n');
 

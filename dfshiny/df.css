@@ -34,6 +34,7 @@
   padding-bottom: 0;
 }
 
+#infile_progress { margin-top: 2px;}
 #infile_progress,#apptitle,#infile_ui>.shiny-input-container { 
   margin-bottom: 0; 
 }
@@ -43,6 +44,24 @@
 
 /* Tabs themselves*/
 .nav { margin-bottom: 8px;}
+
+/* make buttons more compact */
+.btn {
+  padding: 0 6px 1px 6px;
+  margin-left: 6px;
+}
+
+/* upload file field */
+#infile_ui .form-control {
+  padding-bottom: 6px;
+  max-height: 23px;
+}
+
+
+/* make panel headings more compact */
+.panel-heading {
+  padding-top: 2px; padding-bottom: 2px;
+}
 
 /* To line up the selection widgets for available transforms*/
 .transform-argsel {
