@@ -147,6 +147,7 @@ shinyServer(function(input, output, session) {
     req(input$infile$datapath);
     py_run_string(sprintf("dfmeta=DFMeta(fref='%s',suggestions=autosuggestor)"
                           ,input$infile$datapath));
+    # Indicator for the rest of the webapp that the core object is ready
     rv$have_dfmeta <- Sys.time();
     message('\n*** dfmeta created ***\n');
   });
@@ -162,6 +163,7 @@ shinyServer(function(input, output, session) {
                     ,py$dfmeta$data$dialect$delimiter,n_max=500);
     # return a sample of the input for the 'Input Data' tab
     message('\n*** dat loaded ***\n');
+    show(selector = '#maintabs>.tabbable');
     return(head(dat[-1,],100));
   });
 
@@ -217,9 +219,11 @@ shinyServer(function(input, output, session) {
     
     runjs("Shiny.onInputChange('choosewait',+ new Date())");
     
-    # set output options so stuff starts rendering before tab active
+    show(selector = '#maintabs>.tabbable');
     ui_transform;
   });
+
+    # set output options so stuff starts rendering before tab active
   outputOptions(output,'tb_transform',suspendWhenHidden=F);
 
   # Wait for the divIDchosen to load and then make them sortable
