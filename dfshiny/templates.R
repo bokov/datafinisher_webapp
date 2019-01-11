@@ -8,11 +8,11 @@ templates <- list(
  
 ,multidivavailable = '<div id={{divIDavailable}}>{{innerDivs}}</div>'
 
-,incolui='<div id={{divIDchosen}}><b>Chosen:</b></div>
-<div id={{divIDavailable}}><b>Available:</b>{{divavailable}}</div>
+,incolui='<div id={{divIDchosen}}><hr/><strong>Chosen...</strong></div><hr/>
+<div id={{divIDavailable}}><strong>Available...</strong>{{divavailable}}</div>
 '
 
-,divfull ='<div id={{incolid}}>{{incolid}}<br/>
+,divfull ='<div id={{incolid}}><strong>{{incolid}}:</strong><!--br/-->
   <span class="annotation">{{incoldesc}}</span>
   {{incolui}}
 </div>
