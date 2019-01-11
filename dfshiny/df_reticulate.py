@@ -4,8 +4,8 @@ import sys,os,csv
 
 sys.path+=[os.getcwd()+'/datafinisher']
 
-from df_fn import DFMeta,DFCol,autosuggestor
-from df_fn import shortenwords,dropletters,makeTailUnq,ob2tag
+from df_fn import DFMeta,autosuggestor #,DFCol
+#from df_fn import shortenwords,dropletters,makeTailUnq,ob2tag
 from rules import rules2
 # import pandas as pd (for DataFrame, not yet used)
 
