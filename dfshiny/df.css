@@ -31,11 +31,12 @@ h3 {font-family: "Cardo", "Times New Roman", serif;}
   line-height: 15px;
 }
 
-#apptitle,#infile_ui>.shiny-input-container { 
+#infile_ui>.shiny-input-container { 
+  padding-top: 10px;
   margin-bottom: 0; 
 }
 
-#debug_button {padding-top: 40px;}
+#debug_button {margin-top: 38px;}
 
 /* upload file field */
 #infile_ui .form-control {
