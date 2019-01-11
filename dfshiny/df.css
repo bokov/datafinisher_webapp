@@ -1,3 +1,64 @@
+/* site-wide UT-ish branding */
+body {font-family: "Open Sans",Trebuchet,sans-serif;}
+.panel-primary,.panel-collapse>.panel-body{
+  border-color: rgb(134, 56, 19) !important; }
+a { color: #C0511B; font-weight: 600;}
+a:hover { color: rgb(134, 56, 19);}
+.container-fluid>.row {
+  color: #C0511B;
+  /*background-color: white;*/
+  margin-bottom: 10px;
+}
+
+/* header in accordance with UT header styling */
+h3 {
+  font-family: "Cardo", "Times New Roman", serif;
+  margin-left: -20px; 
+}
+
+/* The next few are to line up the page header */
+#apptitle {
+  margin-top: 0;
+  padding-top: 5px;
+}
+
+#infile_ui>.shiny-input-container {
+  margin-top: 2px;
+  padding-bottom: 0;
+}
+
+/* progress bar styling */
+#infile_progress { margin: 1px 0; height: 15px;}
+#infile_progress>.progress-bar{
+  background-color: rgb(134, 56, 19);
+  line-height: 15px;
+}
+
+#apptitle,#infile_ui>.shiny-input-container { 
+  margin-bottom: 0; 
+}
+
+#debug_button {padding-top: 40px;}
+
+/* upload file field */
+#infile_ui .form-control {
+  padding-bottom: 6px;
+  max-height: 22px;
+}
+/* end page header */
+
+
+/* Make the labels less obnoxious */
+label {color: black; font-weight: 400; text-align: justify;}
+.tab-pane label { min-width: 80vh ;}
+
+/* make panel headings more compact and UT-ish */
+.panel-heading {
+  padding-top: 2px; 
+  padding-bottom: 2px;
+  background-color: #C0511B !important;
+}
+
 /* To make the available columns scroll inside the page */
 #tb_transform{
   overflow-y: scroll;
@@ -13,7 +74,6 @@
   height: 0;
 }
 
-
 /* To distinguish the non-dynamic columns and make them more compact*/
 #tb_transform .panel-default .panel-body {
   padding-bottom: 0; padding-top: 0;
@@ -21,46 +81,17 @@
   background-color: whitesmoke;
 }
 
-/* The next few are to line up the page header */
-#apptitle {
-  margin-top: 0;
-  padding-top: 0;
-}
+/* compact separators for tb_transform */
+.panel-collapse hr {margin: 8px 0 5px 0}
 
-.row {margin-bottom: 10px;}
-
-#infile_ui>.shiny-input-container {
-  margin-top: 2px;
-  padding-bottom: 0;
-}
-
-#infile_progress { margin-top: 2px;}
-#infile_progress,#apptitle,#infile_ui>.shiny-input-container { 
-  margin-bottom: 0; 
-}
-
-#debug_button {padding-top: 25px;}
-/* end page header */
 
 /* Tabs themselves*/
 .nav { margin-bottom: 8px;}
 
 /* make buttons more compact */
 .btn {
-  padding: 0 6px 1px 6px;
+  padding: 0 6px 0 6px;
   margin-left: 6px;
-}
-
-/* upload file field */
-#infile_ui .form-control {
-  padding-bottom: 6px;
-  max-height: 23px;
-}
-
-
-/* make panel headings more compact */
-.panel-heading {
-  padding-top: 2px; padding-bottom: 2px;
 }
 
 /* To line up the selection widgets for available transforms*/
