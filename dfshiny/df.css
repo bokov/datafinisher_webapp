@@ -116,3 +116,10 @@ ul.nav>li>a {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+p,p>a {
+  text-align: justify;
+  font-size:  12px;
+  font-weight: 100;
+  font-stretch: semi-condensed;
+}

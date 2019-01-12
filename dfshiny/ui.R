@@ -2,21 +2,43 @@ library(shinyjs);
 
 options(shiny.maxRequestSize=50*1024^2);
 
-termsofuse <- div(h4('Disclaimer'),"
-This WebApp is provided for free as-is without guarantee of suitability for any 
+termsofuse <- div(h4('Disclaimer'),p(class='regulartext'
+,"This WebApp is provided for free as-is without guarantee of suitability for any 
 purpose whatsoever. By uploading a data file to this app you're agreeing to the 
 following: 1) you have sole responsibility for insuring that you are permitted 
 by law and your institution's policies to process your data through this app;
 2) that the author or deployer of this app may track and analyze your usage 
 patterns in order to improve the usability of this app; and 3) that you will 
 hold the author and deployer of this app harmless in the event of any adverse 
-consequences of your use of it."
-                  ,hr(),h4('Instructions'),"Here is some "
-                  ,a(href='demodata.csv',"demo data",target='_blank')
-                  ," (adapted from "
-                  ,a(href='http://i2b2.org/','https://i2b2.org/')," ) "
-,"that you can download and then upload back in order to test out DataFinisher"
-                  );
+consequences of your use of it.")
+,h4('Instructions'),p(class='regulartext',"This web app is designed to 
+post-process i2b2 extracts produced by "
+,a(href='https://github.com/UTHSCSA-CIRD/datafinisher','DataFinisher')
+,".",strong("Here is some ",a(href='demodata.csv',"simulated data"
+                              ,target='_blank'))
+," (adapted from ",a(href='http://i2b2.org/','https://i2b2.org/'),") "
+,"for you to download and then upload back so you can try out DataFinisher")
+,h4('About'),p(class='regulartext',"Written by "
+,a(href='mailto:bokov@uthscsa.edu',"Alex F. Bokov, Ph.D."),"at "
+,a(href='http://deb.uthscsa.edu/services_cird.html'
+   ,'Clinical Informatics Research Division'),"of the"
+,a(href='http://deb.uthscsa.edu/'
+   ,'Department of Epidemiology and Biostatistics'),"of "
+,a(href='https:/www.uthscsa.edu/','UTHealth San Antonio')
+,"with mentorship from"
+,a(href='http://urology.uthscsa.edu/','UTHealth Department of Urology')
+," and ",a(href='https://www.partners.org','Partners Healthcare'),". This work
+was made possible by support from:"
+,a(href='https://iims.uthscsa.edu/'
+   ,'Institute for Integration of Medicine and Science'),"; the "
+,a(href='http://som.uthscsa.edu/DeansOffice/DeansOffice.asp'
+,"Long School of Medicine")," KL2 Award; NIH/NCATS: UL1TR001120; and PCORI CDRN: 
+1306-04631 & 1501-26643.")
+,p(class='regulartext'
+,"The latest version of this open source software is freely available from the "
+,a(href='https://github.com/bokov/datafinisher_webapp/'
+   ,'datafinisher_webapp repository on GitHub'))
+);
 
 shinyUI(fluidPage(
   tags$head(tags$link(rel="shortcut icon", href="favicon.ico"))
