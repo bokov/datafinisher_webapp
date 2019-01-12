@@ -1,5 +1,4 @@
-library(shiny); library(shinyjqui); library(bsplus); library(queryBuilder);
-library(reticulate); library(readr);
+library(shinyjqui); library(bsplus); library(reticulate); library(readr);
 
 # load various useful stuff
 source('templates.R');
