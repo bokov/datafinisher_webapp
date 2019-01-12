@@ -37,7 +37,10 @@ was made possible by support from:"
 ,p(class='regulartext'
 ,"The latest version of this open source software is freely available from the "
 ,a(href='https://github.com/bokov/datafinisher_webapp/'
-   ,'datafinisher_webapp repository on GitHub'))
+   ,'datafinisher_webapp repository on GitHub'),". If/when you deploy 
+DataFinisher at your i2b2 site, I suggest running this web-app inside your own 
+firewall, and you definitely should not use under any circumstances use this 
+public instance if your data contains HIPAA identifiers")
 );
 
 shinyUI(fluidPage(
