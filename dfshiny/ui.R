@@ -39,8 +39,9 @@ was made possible by support from:"
 ,a(href='https://github.com/bokov/datafinisher_webapp/'
    ,'datafinisher_webapp repository on GitHub'),". If/when you deploy 
 DataFinisher at your i2b2 site, I suggest running this web-app inside your own 
-firewall, and you definitely should not use under any circumstances use this 
-public instance if your data contains HIPAA identifiers")
+firewall, and you definitely should not under any circumstances use this public 
+instance with data that contains HIPAA identifiers (there are no geniuine 
+identifiers in the demo data provided here)")
 );
 
 shinyUI(fluidPage(
@@ -111,7 +112,7 @@ shinyUI(fluidPage(
                   # cancel
                   ,actionButton('customCancel','Cancel')
                   )
-        ,tabPanel(span('Terms of',br(),'Use'),termsofuse)
+        ,tabPanel(span('Information',br(),HTML('&nbsp;')),termsofuse)
         )
     # end tabsetpanel ----
        ))
