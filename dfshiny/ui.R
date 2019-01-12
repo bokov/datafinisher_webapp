@@ -1,4 +1,4 @@
-library(shiny);library(shinyjs);library(queryBuilder);
+library(shinyjs);
 
 options(shiny.maxRequestSize=50*1024^2);
 
@@ -10,7 +10,11 @@ by law and your institution's policies to process your data through this app;
 2) that the author or deployer of this app may track and analyze your usage 
 patterns in order to improve the usability of this app; and 3) that you will 
 hold the author and deployer of this app harmless in the event of any adverse 
-consequences of your use of it.");
+consequences of your use of it."
+                  ,hr(),h4('Instructions'),"Here is some "
+                  ,a(href='demodata.csv',"demo data",target='_blank')
+,"that you can download and then upload back in order to test out DataFinisher"
+                  );
 
 shinyUI(fluidPage(
   tags$head(tags$link(rel="shortcut icon", href="favicon.ico"))
