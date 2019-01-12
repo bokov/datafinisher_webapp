@@ -13,6 +13,8 @@ hold the author and deployer of this app harmless in the event of any adverse
 consequences of your use of it."
                   ,hr(),h4('Instructions'),"Here is some "
                   ,a(href='demodata.csv',"demo data",target='_blank')
+                  ," (adapted from "
+                  ,a(href='http://i2b2.org/','https://i2b2.org/')," ) "
 ,"that you can download and then upload back in order to test out DataFinisher"
                   );
 
