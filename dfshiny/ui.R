@@ -30,7 +30,8 @@ shinyUI(fluidPage(
                         ,"text/tab-separated-values,text/plain"
                         ,"text/comma-separated-values,text/plain"
             )),id='infile_ui')
-    ,column(1,actionButton('debug','Debug'),id='debug_button')
+    ,if(!shinyapps) {
+      column(1,actionButton('debug','Debug'),id='debug_button')} else c()
   )
   # ,actionButton('btDumpcols','Column Info')
   # ,div(id='debugval','Waiting for debug value...')
