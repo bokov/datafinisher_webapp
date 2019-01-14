@@ -417,6 +417,8 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
     rv$newdivs <- newdivs; rv$newinfo <- newinfo;
   });
   
+  
+  
   # Populate the new divs, new info created in Custom Transforms
   observeEvent(c(rv$newdivs,rv$newinfo),{
     for(ii in names(rv$newinfo)){
@@ -431,8 +433,18 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
     # empty out description field and selectizeinput fields
     runjs("$('#customCancel').click()");
   });
-
   
+  # output preview! ----
+  observeEvent(input$outprev,{
+    req(rv$have_dfmeta);
+    tempname <- py$dfmeta$processRows(tempfile(tmpdir = 'www'),nrows=500);
+    py$dfmeta$fhandle$seek(0); py$dfmeta$nrows = 3;
+    output$tb_outfile_prev <- renderDataTable(
+      rv$testout <- read_delim(tempname
+                               # TODO: wtf is the second row broken?
+                               ,delim=py$dfmeta$data$dialect$delimiter)[-2,])
+    });
+
   # Save the user-controlled parts of the current UI state
   # to internal variable (currently for testing, in the future might be the
   # basis for exporting settings for later reuse)

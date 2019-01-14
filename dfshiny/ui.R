@@ -112,6 +112,9 @@ shinyUI(fluidPage(
                   # cancel
                   ,actionButton('customCancel','Cancel')
                   )
+        ,tabPanel(span('Output',br(),'Preview')
+                  ,actionButton('outprev','Generate/Update Preview of Output')
+                  ,dataTableOutput('tb_outfile_prev'))
         ,tabPanel(span('Information',br(),HTML('&nbsp;')),termsofuse)
         )
     # end tabsetpanel ----
