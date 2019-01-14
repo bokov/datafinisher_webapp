@@ -158,13 +158,15 @@ shinyServer(function(input, output, session) {
   output$tb_infile_prev <- renderDataTable({
     req(rv$have_dfmeta);
     # TODO: temporary, will create simpler py-side method
-    py_run_string('dfmeta.fhandle.seek(0)');
-    dat<-read_delim(py_eval('dfmeta.fhandle.read(1024000)')
-                    ,py$dfmeta$data$dialect$delimiter,n_max=500);
+    #py_run_string('dfmeta.fhandle.seek(0)');
+    #dat<-read_delim(py_eval('dfmeta.fhandle.read(1024000)')
+    #                ,py$dfmeta$data$dialect$delimiter,n_max=500);
     # return a sample of the input for the 'Input Data' tab
     message('\n*** dat loaded ***\n');
     show(selector = '#maintabs>.tabbable');
-    return(head(dat[-1,],100));
+    #return(head(dat[-1,],100));
+    return(read_delim(paste0(py$dfmeta$sampleInput(nrows = 500)
+                             ,collapse='\n'),py$dfmeta$data$dialect$delimiter));
   });
 
   outputOptions(output,'tb_infile_prev',suspendWhenHidden=F);
