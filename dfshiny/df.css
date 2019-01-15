@@ -109,6 +109,13 @@ ul.nav>li>a {
 }
 
 /* To make the Input Data and Output Preview contents more compact */
+
+/*
+Useful classes for later:
+.dataTables_processing
+.recalculating
+*/
+
 .dataTable>tbody>tr>td {
   line-height: 5px;
   white-space: nowrap;
@@ -116,6 +123,17 @@ ul.nav>li>a {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* dataTable pagination controls */
+
+li.paginate_button>a {color: #008c99;}
+
+li.paginate_button.active>a {
+  background-color: #008c99;
+  color: white;
+  border-color: #008c99;
+}
+
 
 p,p>a {
   text-align: justify;
