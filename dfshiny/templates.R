@@ -18,7 +18,7 @@ templates <- list(
 </div>
 '
 
-,divchosen ='<div id={{shortname}} class="panel panel-body panel-default">
+,divchosen ='<div id={{longname}} class="panel panel-body panel-default">
 {{longname}}{{delbutton}}<br/><span class="annotation">{{ruledesc}}</span>
 </div>
 '
