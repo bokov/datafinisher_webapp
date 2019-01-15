@@ -1,4 +1,4 @@
-library(shinyjs);
+library(shinyjs); library(shinyhelper);
 
 options(shiny.maxRequestSize=50*1024^2);
 
@@ -52,11 +52,11 @@ shinyUI(fluidPage(
      column(1,img(src='sitelogo_color.png',width='45px'))
     ,column(2,h3("Datafinisher WebApp",id='apptitle'))
     ,column(4,fileInput("infile", "Choose a CSV file to upload"
-            ,multiple = FALSE,width = '400px'
-            ,accept = c("text/csv","text/tsv",".csv",".tsv"
-                        ,".tab",".txt"
-                        ,"text/tab-separated-values,text/plain"
-                        ,"text/comma-separated-values,text/plain"
+                        ,multiple = FALSE,width = '400px'
+                        ,accept = c("text/csv","text/tsv",".csv",".tsv"
+                                    ,".tab",".txt"
+                                    ,"text/tab-separated-values,text/plain"
+                                    ,"text/comma-separated-values,text/plain"
             )),id='infile_ui')
     ,if(!shinyapps) {
       column(1,actionButton('debug','Debug'),id='debug_button')} else c()
@@ -67,14 +67,17 @@ shinyUI(fluidPage(
     # tabsetPanel ----
       ,div(id='termsofuse',termsofuse)
       ,hidden(tabsetPanel(
-        tabPanel(span('Input',br(),'Data')
-                 ,conditionalPanel(condition="$('html').hasClass('shiny-busy')",
+        tabPanel(span(id='tInputData','Input',br(),'Data')
+                 ,helpText('This is test helptext')
+                 ,conditionalPanel(condition="
+                  $('html').hasClass('shiny-busy') && 
+                  $('.nav-tabs>.active>a>span')[0].id=='tInputData'",
                                    div("Reading your file, please wait..."
-                                       ,id="loading_message"))
+                                       ,id="loading_message_in"))
                  ,dataTableOutput('tb_infile_prev'))
-        ,tabPanel(span('Transform',br(),'Columns')
+        ,tabPanel(span(id='tTransform','Transform',br(),'Columns')
                   ,uiOutput('tb_transform'))
-        ,tabPanel(span('Customize',br(),'Transforms')
+        ,tabPanel(span(id='tCustomTrans','Customize',br(),'Transforms')
                   # transform name
                   ,textInput('customTrName'
                              ,'Choose a name for your transformation'
@@ -112,10 +115,20 @@ shinyUI(fluidPage(
                   # cancel
                   ,actionButton('customCancel','Cancel')
                   )
-        ,tabPanel(span('Output',br(),'Preview')
-                  ,actionButton('outprev','Generate/Update Preview of Output')
+        ,tabPanel(span('Output',br(),'Preview'),id='tOutPrev'
+                  ,conditionalPanel(condition="
+                  $('html').hasClass('shiny-busy') && 
+                  $('.nav-tabs>.active>a>span')[0].id=='tOutPrev'",
+                                    div("Preparing your file, please wait..."
+                                        ,id="loading_message_out"))
+                  ,actionButton('outprev','Generate/Update Preview of Results'
+                                ,icon=icon('eye'))
+                  ,hidden(actionButton('outwrite','Prepare Results for Download'
+                                       ,icon=icon('play')))
+                  ,hidden(downloadButton('outdownload','Download Full Results'))
+                  ,hr()
                   ,dataTableOutput('tb_outfile_prev'))
-        ,tabPanel(span('Information',br(),HTML('&nbsp;')),termsofuse)
+        ,tabPanel(span('Information',br(),HTML('&nbsp;')),id='tInfo',termsofuse)
         )
     # end tabsetpanel ----
        ))
