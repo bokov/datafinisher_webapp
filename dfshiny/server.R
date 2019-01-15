@@ -70,7 +70,7 @@ addChosen <- function(incolid,availableid,userArgs=list(),input,...){
 
 removeChosen <- function(incolid,finalid,...){
   finalid <- gsub('^#','',finalid);
-  remtarget <- paste0('#',py$dfmeta[incolid]$chosen[[finalid]]$shortname)
+  remtarget <- paste0('#',py$dfmeta[incolid]$chosen[[finalid]]$longname)
   py$dfmeta[incolid]$unprepChosen(finalid);
   removeUI(remtarget,immediate = T);
 }
@@ -164,10 +164,9 @@ shinyServer(function(input, output, session) {
     # return a sample of the input for the 'Input Data' tab
     message('\n*** dat loaded ***\n');
     show(selector = '#maintabs>.tabbable');
-    #return(head(dat[-1,],100));
-    return(read_delim(paste0(py$dfmeta$sampleInput(nrows = 500)
+    return(read_delim(paste0(py$dfmeta$sampleInput(nrows = 300)
                              ,collapse='\n'),py$dfmeta$data$dialect$delimiter));
-  });
+  },options=list(scrollY='50vh',scroller=T,scrollX=T,processing=T));
 
   outputOptions(output,'tb_infile_prev',suspendWhenHidden=F);
   
@@ -437,13 +436,43 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
   # output preview! ----
   observeEvent(input$outprev,{
     req(rv$have_dfmeta);
-    tempname <- py$dfmeta$processRows(tempfile(tmpdir = 'www'),nrows=500);
-    py$dfmeta$fhandle$seek(0); py$dfmeta$nrows = 3;
+    hide('outdownload');hide('outwrite');
+    # get the output column order
+    chsnames <- sapply(py$dfmeta$getColIDs(ids=c('divIDchosen','incolid'))
+                      ,function(xx) setNames(list(input[[xx[1]]]),xx[2]));
+    # TODO: fix this so that Python catches null entries, including where all
+    # are null, so that the web front end doesn't need to
+    chsnames <- chsnames[!sapply(chsnames,is.null)];
+    if(length(chsnames)>0) py$dfmeta$finalizeChosen(chsnames);
+    tempname <- py$dfmeta$processRows(tempfile(),nrows=300);
+    #py$dfmeta$fhandle$seek(0); py$dfmeta$nrows = 3;
     output$tb_outfile_prev <- renderDataTable(
       rv$testout <- read_delim(tempname
                                # TODO: wtf is the second row broken?
-                               ,delim=py$dfmeta$data$dialect$delimiter)[-2,])
+                               ,delim=py$dfmeta$data$dialect$delimiter)[-2,]
+      ,options=list(scrollY='50vh',scroller=T,scrollX=T,processing=T
+                    ,initComplete=I("
+      function(settings, json) {
+        Shiny.onInputChange('tb_outfile_prev_state','loaded');
+      }")));
+    show('outwrite');
     });
+  
+  # If it's necessary to do something after the dataTable loads, uncomment this
+  # observeEvent and put that behavior into its payload
+  # observeEvent(input$tb_outfile_prev_state,{
+  #   browser();
+  # });
+  
+  observeEvent(input$outwrite,{
+    foutname<-py$dfmeta$processRows(outfile = tempfile()
+                                    ,returnwhat = 'filename');
+    output$outdownload <- downloadHandler(filename=paste0('DF_'
+                                                          ,input$infile$name)
+                                          ,content=function(con) {
+                                            file.copy(foutname,con)});
+    show('outdownload');
+  });
 
   # Save the user-controlled parts of the current UI state
   # to internal variable (currently for testing, in the future might be the
