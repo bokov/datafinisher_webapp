@@ -294,13 +294,13 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
         } else cat('\n',ii,' has no ccd_list\n');
       };
     # They have NULL values not because they lack codes but 
-    # because they have too many. Catch those cases and turn
     # them into text instead of selectives
     if(is.null(out$concept_cd$values)){
       out$concept_cd$values <- NULL;
       out$concept_cd$input <- 'text';
     }
-    validchoices<-names(rv$currentFilterlist <- out[applicable]);
+    rv$currentFilterlist <- out[applicable];
+    validchoices <- sapply(rv$currentFilterlist,`[[`,'name');
     print('Updated rv$currentFilterList');
     ready <- !is.null(input$customTrDesc) && input$customTrDesc != '' &&
       !is.null(input$customSelCols) && input$customSelCols != '';
@@ -320,6 +320,7 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
                                                         return:'
                                                   ,multiple=T
                                                   ,choices=validchoices);
+      output$customWhichFields <- renderUI(rv$customWhichFieldsReady);
       show('customWhichFields');
       show('customQBhead');
     } else {
@@ -329,9 +330,7 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
       hide('customAggregate');
     }
   });
-  
-  output$customWhichFields <- renderUI(rv$customWhichFieldsReady);
-  
+
   # re/create the querybuilder UI
   output$qbtest <- renderQueryBuilder({
     print('rendering qbtest');
@@ -450,7 +449,10 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
     # TODO: fix this so that Python catches null entries, including where all
     # are null, so that the web front end doesn't need to
     chsnames <- chsnames[!sapply(chsnames,is.null)];
-    if(length(chsnames)>0) py$dfmeta$finalizeChosen(chsnames);
+    #.dbg <- try(
+    py$dfmeta$finalizeChosen(chsnames);
+    #);
+    #if(class(.dbg)[1]=='try-error') browser();
     tempname <- py$dfmeta$processRows(tempfile(),nrows=300);
     #py$dfmeta$fhandle$seek(0); py$dfmeta$nrows = 3;
     output$tb_outfile_prev <- renderDataTable(
