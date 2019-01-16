@@ -54,7 +54,8 @@ shinyUI(fluidPage(
     ,column(4,fileInput("infile", "Choose a CSV file to upload"
                         ,multiple = FALSE,width = '400px'
                         ,accept = c("text/csv","text/tsv",".csv",".tsv"
-                                    ,".tab",".txt"
+                                    ,".tab",".txt",".db"
+                                    ,"application/x-sqlite3"
                                     ,"text/tab-separated-values,text/plain"
                                     ,"text/comma-separated-values,text/plain"
             )),id='infile_ui')
@@ -68,7 +69,6 @@ shinyUI(fluidPage(
       ,div(id='termsofuse',termsofuse)
       ,hidden(tabsetPanel(
         tabPanel(span(id='tInputData','Input',br(),'Data')
-                 ,helpText('This is test helptext')
                  ,conditionalPanel(condition="
                   $('html').hasClass('shiny-busy') && 
                   $('.nav-tabs>.active>a>span')[0].id=='tInputData'",
