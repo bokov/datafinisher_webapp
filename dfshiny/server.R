@@ -1,5 +1,7 @@
 library(shinyjqui); library(bsplus); library(reticulate); library(readr);
 
+# reminder: the interactive debugger for reticulate is repl_python 
+
 # load various useful stuff
 source('templates.R');
 
@@ -32,7 +34,7 @@ sortableWatcher<-function(targetid,inputid
   if(missing(selector)) selector <- paste0(targetid,'>div');
   js <- sprintf("
   $('%1$s').sortable().on('%2$s',function(event,ui){
-    Shiny.onInputChange('uigroup','chosenid');
+    Shiny.onInputChange('uigroup','%1$s');
     Shiny.onInputChange('%3$s', $('%4$s').map(function(){
                 return this.id}).get())})"
                 ,targetid,event,inputid,selector);
@@ -62,7 +64,7 @@ addChosen <- function(incolid,availableid,userArgs=list(),input,...){
                                                           ,'Remove'
                                                           ,class='btn-danger'))
     );
-    runjs(sprintf("$('%s').trigger('sortupdate')",objinfo$divIDchosen));
+    runjs(sprintf("$('#%s').trigger('sortupdate')",objinfo$divIDchosen));
     onclick(objinfo$delbid
             ,removeChosen(objinfo$parent_name,objinfo$longname,rv));
   }
@@ -70,9 +72,10 @@ addChosen <- function(incolid,availableid,userArgs=list(),input,...){
 
 removeChosen <- function(incolid,finalid,...){
   finalid <- gsub('^#','',finalid);
-  remtarget <- paste0('#',py$dfmeta[incolid]$chosen[[finalid]]$longname)
+  objinfo <- py$dfmeta[incolid]$chosen[[finalid]];
   py$dfmeta[incolid]$unprepChosen(finalid);
-  removeUI(remtarget,immediate = T);
+  removeUI(paste0('#',objinfo$longname),immediate = T);
+  runjs(sprintf("$('#%s').trigger('sortupdate')",objinfo$divIDchosen));
 }
 
 withHtmlTemplate <- function(env,template,...){
@@ -144,6 +147,10 @@ shinyServer(function(input, output, session) {
   # create dfmeta ----
   observeEvent(input$infile,{
     req(input$infile$datapath);
+    # py_run_string(sprintf("testfile='%s'",input$infile$datapath));
+    # py_run_string('from df_fn import handleDelimFile');
+    # repl_python();
+    # browser();
     py_run_string(sprintf("dfmeta=DFMeta(fref='%s',suggestions=autosuggestor)"
                           ,input$infile$datapath));
     # Indicator for the rest of the webapp that the core object is ready
@@ -467,8 +474,8 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
   observeEvent(input$outwrite,{
     foutname<-py$dfmeta$processRows(outfile = tempfile()
                                     ,returnwhat = 'filename');
-    output$outdownload <- downloadHandler(filename=paste0('DF_'
-                                                          ,input$infile$name)
+    fnicename <- paste0('DF_',gsub('\\.db$','.csv',input$infile$name));
+    output$outdownload <- downloadHandler(filename=fnicename
                                           ,content=function(con) {
                                             file.copy(foutname,con)});
     show('outdownload');
