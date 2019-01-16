@@ -46,6 +46,19 @@ h3 {font-family: "Cardo", "Times New Roman", serif;}
 }
 /* end page header */
 
+/* shinyhelper */
+.shinyhelper-container {
+  position: relative;
+  right: 20px;
+  display: inline-block;
+}
+#infile_ui .shinyhelper-container {
+  position: relative;
+  display: inline;
+  right: 20px;
+  top: -20px;
+}
+/* end shinyhelper */
 
 /* Make the labels less obnoxious */
 label {color: black; font-weight: 400; text-align: justify;}
@@ -89,7 +102,7 @@ label {color: black; font-weight: 400; text-align: justify;}
 /* Tabs themselves more compact*/
 .nav { margin-bottom: 8px;}
 ul.nav>li>a {
-  padding: 4px 12px;
+  padding: 4px 12px 4px 12px;
   line-height: 100%; 
   text-align: center;
 }
