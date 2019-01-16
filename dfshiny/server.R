@@ -130,6 +130,7 @@ validNames <- function(newname #,existingnames=c()
 shinyServer(function(input, output, session) {
   # server init ----
   # load the stuff we need from datafinisher
+  observe_helpers(help_dir = 'www/docs');
   source_python('df_reticulate.py');
   runjs("$('#customQB').on('hidden.bs.collapse',function(){
         Shiny.onInputChange('qbtest_out',null);
