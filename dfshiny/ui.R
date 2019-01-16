@@ -109,10 +109,10 @@ shinyUI(fluidPage(
                  ,helper(strong(),type='inline',content=help_tinput,colour=hcol)
                  ,dataTableOutput('tb_infile_prev'))
         ,tabPanel(span(id='tTransform','Transform',br(),'Columns')
-                  ,helper(strong(),type='inline',content=help_tinput,colour=hcol)
+                  ,helper(strong(),type='inline',content=help_ttransform,colour=hcol)
                   ,uiOutput('tb_transform'))
         ,tabPanel(span(id='tCustomTrans','Customize',br(),'Transforms')
-                  ,helper(strong(),type='inline',content=help_ttransform
+                  ,helper(strong(),type='inline',content=help_tcustomize
                           ,colour=hcol)
                   # transform name
                   ,textInput('customTrName'
