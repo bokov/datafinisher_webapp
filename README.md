@@ -1,27 +1,32 @@
 # datafinisher_webapp
-Web front-end for modifying DataFinisher files
+Web front-end for modifying DataFinisher files. 
+Here is a [demo](https://bokov.shinyapps.io/dfshiny/).
 
 ## Quick Start
 First, clone this repo along with its dependency. In bash or some similar 
-command line:
+command shell:
 ```
 git clone git@github.com:bokov/datafinisher_webapp
 cd datafinisher_webapp
-git checkout refactor_00
+git checkout integration
 git submodule update --init --recursive
 R
 ```
 
 Then, in an R session...
 ```
+# install dependencies
 install.packages(c('shinyjqui','bsplus','reticulate','readr','shiny','dplyr'
-                    ,'queryBuilder','shinyjs','shinyalert'))
-# assuming you are in the top-level project directory...
+                    ,'devtools','shinyjs','shinyalert'))
+devtools::install_github("harveyl888/queryBuilder")
+
+# assuming you are still in the top-level project directory...
 shiny::runApp('dfshiny')
 ```
 
 The hard part is not DataFinisher, really. The hard part is deploying
 [DataBuilder](https://informatics.gpcnetwork.org/trac/Project/wiki/BuilderSaga)
+and figuring out how to configure it to create those .db files for you.
 
 ## Here is what passes for an API at this stage...
 
