@@ -4,6 +4,7 @@ library(shinyjqui); library(bsplus); library(reticulate); library(readr);
 
 # load various useful stuff
 source('templates.R');
+source('www/docs/helptext.R')
 
 dumpOutputCols <- function(id='dumpcols',input=input,rv=rv,...){
   js <- sprintf("
@@ -232,6 +233,11 @@ shinyServer(function(input, output, session) {
     show(selector = '#maintabs>.tabbable');
     ui_transform;
   });
+  
+  # create help content ----
+  lapply(names(helptext),function(ii) {
+    onclick(ii,shinyalert(text = helptext[[ii]],confirmButtonCol = hcol
+                          ,className = 'dfHelp'))});
 
     # set output options so stuff starts rendering before tab active
   outputOptions(output,'tb_transform',suspendWhenHidden=F);
@@ -259,6 +265,8 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
     });
     xx = 0}; Shiny.onInputChange('choosewait',xx);");};
   });
+  
+  
   
   # custom rule names ----
   # make sure custom rules have names that are safe, legal, 
@@ -313,7 +321,7 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
     }
     if(ready) {
       rv$qbtest<- queryBuilder(filters=unname(rv$currentFilterlist)
-                               ,allow_empty=T);
+                               ,allow_empty=T,height = '100%');
       rv$customWhichFieldsReady <- selectizeInput('customSelFields'
                                                   ,label='Select the field or
                                                         fields you wish this
@@ -322,13 +330,13 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
                                                   ,multiple=T
                                                   ,choices=validchoices);
       output$customWhichFields <- renderUI(rv$customWhichFieldsReady);
-      show('customWhichFields');
+      show('customWhichFieldsGrp');
       show('customQBhead');
     } else {
-      hide('customWhichFields');
+      hide('customWhichFieldsGrp');
       runjs("$('#customQB').collapse('hide')");
       hide('customQBhead');
-      hide('customAggregate');
+      hide('customAggregateGrp');
     }
   });
 
@@ -382,12 +390,12 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
                                              for the same visit, how do you wish
                                              to aggregate them?'
                                      ,choices=choices);
-                   show('customAggregate');
+                   show('customAggregateGrp');
                    if(is.null(input$qbtest_validate)||input$qbtest_validate) {
                      enable('customSave')
                      } else disable('customSave');
                    } else {
-                     hide('customAggregate');
+                     hide('customAggregateGrp');
                      disable('customSave');
                    }
                    });
