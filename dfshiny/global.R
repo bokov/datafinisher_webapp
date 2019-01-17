@@ -16,3 +16,6 @@ if(shinyapps){
 library(shiny);library(dplyr);
 do.call(library, list("queryBuilder"));
 c()
+
+# Variables needed by both ui.R and server.R ----
+hcol <- '#008c99'
