@@ -1,4 +1,4 @@
-library(shinyjqui); library(bsplus); library(reticulate); library(readr);
+library(bsplus); library(reticulate); library(readr);
 
 # reminder: the interactive debugger for reticulate is repl_python 
 
@@ -138,13 +138,14 @@ shinyServer(function(input, output, session) {
         Shiny.onInputChange('qbtest_validate',true);
       })");
   
-  rv <- reactiveValues(uitest=div(
-     orderInput('source', 'Source'
-                ,items = factor(sample(month.abb,15,rep=T))
-                ,as_source = TRUE, connect = 'dest')
-    ,orderInput('dest', 'Dest', items = NULL
-               , placeholder = 'Drag items here...')
-    ));
+  rv <- reactiveValues();
+    # uitest=div(
+    #  orderInput('source', 'Source'
+    #             ,items = factor(sample(month.abb,15,rep=T))
+    #             ,as_source = TRUE, connect = 'dest')
+    # ,orderInput('dest', 'Dest', items = NULL
+    #            , placeholder = 'Drag items here...')
+    # );
   
   # create dfmeta ----
   observeEvent(input$infile,{
