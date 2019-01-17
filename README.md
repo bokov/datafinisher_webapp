@@ -1,5 +1,6 @@
 # datafinisher_webapp
-Web front-end for modifying DataFinisher files
+Web front-end for modifying DataFinisher files. 
+Here is a [demo](https://bokov.shinyapps.io/dfshiny/).
 
 ## Quick Start
 First, clone this repo along with its dependency. In bash or some similar 
