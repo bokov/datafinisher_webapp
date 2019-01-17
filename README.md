@@ -1,6 +1,28 @@
 # datafinisher_webapp
 Web front-end for modifying DataFinisher files
 
+## Quick Start
+First, clone this repo along with its dependency. In bash or some similar 
+command line:
+```
+git clone git@github.com:bokov/datafinisher_webapp
+cd datafinisher_webapp
+git checkout refactor_00
+git submodule update --init --recursive
+R
+```
+
+Then, in an R session...
+```
+install.packages(c('shinyjqui','bsplus','reticulate','readr','shiny','dplyr'
+                    ,'queryBuilder','shinyjs','shinyalert'))
+# assuming you are in the top-level project directory...
+shiny::runApp('dfshiny')
+```
+
+The hard part is not DataFinisher, really. The hard part is deploying
+[DataBuilder](https://informatics.gpcnetwork.org/trac/Project/wiki/BuilderSaga)
+
 ## Here is what passes for an API at this stage...
 
 These are all the calls that Shiny currently makes to DFMeta attributes:
