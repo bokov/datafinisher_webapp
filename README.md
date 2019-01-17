@@ -16,8 +16,8 @@ R
 Then, in an R session...
 ```
 # install dependencies
-install.packages(c('shinyjqui','bsplus','reticulate','readr','shiny','dplyr'
-                    ,'devtools','shinyjs','shinyalert'))
+install.packages(c('bsplus','reticulate','readr','shiny','dplyr','devtools'
+                    ,'shinyjs','shinyalert'))
 devtools::install_github("harveyl888/queryBuilder")
 
 # assuming you are still in the top-level project directory...
