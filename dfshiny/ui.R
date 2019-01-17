@@ -1,4 +1,4 @@
-library(shinyjs); library(shinyhelper);
+library(shinyjs); library(shinyhelper); library(shinyalert);
 
 options(shiny.maxRequestSize=50*1024^2);
 
@@ -64,55 +64,31 @@ instance with data that contains HIPAA identifiers (there are no geniuine
 identifiers in the demo data provided here)")
 );
 
-help_upload <- "
-Please upload a .csv file that has been created by this version of DataFinisher
-or a .db SQLite file created by DataBuilder. Not any .csv or .db file will work:
-they have to have been created by DataFinisher or DataBuilder. Excel files are 
-not currently supported.";
 
-help_tinput <- "This is a sample of the the top few rows from the file you 
-uploaded.";
-
-help_ttransform <- "Here you can change which transformations are applied to
-which main columns. One main column can be used to created output columns. If 
-you don't choose anything for a column, it will not be deleted. Rather, default
-transformations will be applied. The main columns always keep getting passed on
-with all their metadata so if necessary you can re-upload a file produced by 
-DataFinisher and make a different set of choices.";
-
-help_tcustomize <- "If none of the built-in transformations do what you need them
-to do, you can create your own in this tab and specify for which columns it 
-be available.";
-
-help_toutput <- "When you want to see how your transformations will look, click 
-the 'Generate/Update Preview of Results' button. Once it completes, you will get
-access to the 'Prepare Results for Download Button'. After you click that and 
-the download is prepared (this may take a while if your file is large) you will
-see a third button, 'Download Full Results'. This tab does not update 
-automatically. You will need to manually click 'Generate/Update Preview of 
-Results' whenever you want to see the most recent changes you made.";
-
-hcol <- '#008c99'
 
 shinyUI(fluidPage(
   tags$head(tags$link(rel="shortcut icon", href="favicon.ico"))
   ,includeCSS('df.css')
   ,useShinyjs()
+  ,useShinyalert()
   ,fluidRow(
      column(1,img(src='sitelogo_color.png',width='45px'))
     ,column(2,h3("Datafinisher WebApp",id='apptitle'))
-    ,column(4,fileInput("infile", tagList("Choose a CSV file to upload"
-                        ,helper(strong(),type='inline',content=help_upload
-                                 ,colour=hcol))
+    ,column(4
+            ,fileInput("infile", div("Choose a CSV file to upload"
+                                     )
                         ,multiple = FALSE,width = '400px'
                         ,accept = c("text/csv","text/tsv",".csv",".tsv"
                                     ,".tab",".txt",".db"
                                     ,"application/x-sqlite3"
                                     ,"text/tab-separated-values,text/plain"
-                                    ,"text/comma-separated-values,text/plain"
-            )),id='infile_ui')
-    ,if(!shinyapps) {
-      column(1,actionButton('debug','Debug'),id='debug_button')} else c()
+                                    ,"text/comma-separated-values,text/plain")
+                       )
+            ,id='infile_ui')
+    ,column(1,id='helpDebug'
+            ,span(id='hInfile',icon('question-circle'))
+            ,if(!shinyapps) actionButton('debug','Debug') else c()
+            )
   )
   # ,actionButton('btDumpcols','Column Info')
   # ,div(id='debugval','Waiting for debug value...')
@@ -120,42 +96,53 @@ shinyUI(fluidPage(
     # tabsetPanel ----
       ,div(id='termsofuse',termsofuse)
       ,hidden(tabsetPanel(
-        tabPanel(span(id='tInputData','Input',br(),'Data')
+        tabPanel(span(id='tInputData','Input',br(),'Data'
+                      ,span(id='hInputData',icon('question-circle')))
                  ,conditionalPanel(condition="
                   $('html').hasClass('shiny-busy') && 
                   $('.nav-tabs>.active>a>span')[0].id=='tInputData'",
                                    div("Reading your file, please wait..."
                                        ,id="loading_message_in"))
-                 ,helper(strong(),type='inline',content=help_tinput,colour=hcol)
+                 #,helper(strong(),type='inline',content=help_tinput,colour=hcol)
                  ,dataTableOutput('tb_infile_prev'))
-        ,tabPanel(span(id='tTransform','Transform',br(),'Columns')
-                  ,helper(strong(),type='inline',content=help_ttransform,colour=hcol)
+        ,tabPanel(span(id='tTransform','Transform',br(),'Columns'
+                       ,span(id='hTransform',icon('question-circle')))
+                  #,helper(strong(),type='inline',content=help_ttransform,colour=hcol)
                   ,uiOutput('tb_transform'))
-        ,tabPanel(span(id='tCustomTrans','Customize',br(),'Transforms')
-                  ,helper(strong(),type='inline',content=help_tcustomize
-                          ,colour=hcol)
+        ,tabPanel(span(id='tCustomTrans','Customize',br(),'Transforms'
+                       ,span(id='hCustomTrans',icon('question-circle')))
                   # transform name
                   ,textInput('customTrName'
                              ,'Choose a name for your transformation'
-                             ,'custom',width='80vh') %>% 
-                    helper(type='inline',content='placeholderName',colour=hcol)
+                             ,'custom',width='80vh')
+                  ,span(id='WIP_name',icon('question-circle'))
+                  ,hr()
                   # description
                   ,textAreaInput('customTrDesc'
                                  ,'Please write a brief description of what you
                                    intend for your custom column transformation
-                                   to be (required)',width='80vh') %>% 
-                    helper(type='inline',content='placeholderDesc',colour=hcol)
+                                   to be (required)',width='80vh')
+                  ,span(id='WIP_desc',icon('question-circle'))
+                  ,hr()
                   # multi-select columns
-                  ,uiOutput('customWhichCols') %>% 
-                    helper(type='inline',content='placeholderCols',colour=hcol)
+                  ,uiOutput('customWhichCols')
+                  ,span(id='WIP_cols',icon('question-circle'))
+                  ,hr()
                   # fields to return
-                  ,hidden(uiOutput('customWhichFields')) %>% 
-                            helper(type='inline',content='placeholderFields',colour=hcol)
+                  ,hidden(div(id='customWhichFieldsGrp'
+                              ,uiOutput('customWhichFields')
+                              ,span(id='WIP_fields',icon('question-circle'))
+                              ,hr()
+                              ))
                   # aggregation
-                  ,hidden(selectInput('customAggregate'
-                                ,'If multiple values exist for the same visit, how do you wish to aggregate them?',selectize = F
-                               ,choices='')) %>% 
-                            helper(type='inline',content='placeholderAgg',colour=hcol)
+                  ,hidden(div(id='customAggregateGrp'
+                              ,selectInput('customAggregate'
+                                           ,'If multiple values exist for the same visit, how do you wish to aggregate them?'
+                                           ,selectize = F,choices='')
+                          ,span(id='WIP_agg',icon('question-circle')),hr()
+                          )
+                  )
+                  
                   # qb widget
                   ,hidden(a(id='customQBhead'
                      ,class='btn btn-default'
@@ -168,22 +155,26 @@ shinyUI(fluidPage(
                        ))
                   ,div(class='collapse card card-body'
                        ,id='customQB'
+                       ,span(id='WIP_qb',icon('question-circle'))
                        #,'Placeholder Text'
-                       ,queryBuilderOutput('qbtest')
-                       ) %>% 
-                    helper(type='inline',content='placeholderQB',colour=hcol)
+                       ,queryBuilderOutput('qbtest',height = '100%')
+                       )
                   # save
+                  ,hr()
+                  ,span(id='WIP_save',icon('question-circle')),HTML('&nbsp;')
                   ,disabled(actionButton('customSave','Save'))
                   # cancel
                   ,actionButton('customCancel','Cancel')
                   )
-        ,tabPanel(span('Output',br(),'Preview'),id='tOutPrev'
+        ,tabPanel(span('Output',br(),'Preview'
+                       ,span(id='hOutput',icon('question-circle'))
+                  ,id='tOutPrev')
                   ,conditionalPanel(condition="
                   $('html').hasClass('shiny-busy') && 
                   $('.nav-tabs>.active>a>span')[0].id=='tOutPrev'",
                                     div("Preparing your file, please wait..."
                                         ,id="loading_message_out"))
-                  ,helper(strong(),type='inline',content=help_toutput,colour=hcol)
+                  #,helper(strong(),type='inline',content=help_toutput,colour=hcol)
                   ,actionButton('outprev','Generate/Update Preview of Results'
                                 ,icon=icon('eye'))
                   ,hidden(actionButton('outwrite','Prepare Results for Download'
