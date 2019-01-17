@@ -1,8 +1,10 @@
 /* site-wide UT-ish branding */
-body {font-family: "Open Sans",Trebuchet,sans-serif;}
+body,.dfHelp {
+  font-family: "Open Sans",Trebuchet,sans-serif;
+}
 .panel-primary,.panel-collapse>.panel-body{
   border-color: #008c99 !important; }
-a { color: #008c99; font-weight: 600;}
+a,.fa-question-circle { color: #008c99; font-weight: 600;}
 a:hover { color: #004067;}
 .container-fluid>.row {
   color: #C0511B;
@@ -22,6 +24,9 @@ h3 {font-family: "Cardo", "Times New Roman", serif;}
 #infile_ui>.shiny-input-container {
   margin-top: 2px;
   padding-bottom: 0;
+}
+#infile_ui input.form-control{
+  margin-top: 6px;
 }
 
 /* progress bar styling */
@@ -46,7 +51,8 @@ h3 {font-family: "Cardo", "Times New Roman", serif;}
 }
 /* end page header */
 
-/* shinyhelper */
+/* help text */
+/*
 .shinyhelper-container {
   position: relative;
   right: 20px;
@@ -58,14 +64,28 @@ h3 {font-family: "Cardo", "Times New Roman", serif;}
   right: 20px;
   top: -20px;
 }
+*/
 
-img.bigimg {
+.dfHelp{
+  padding: 0 15px 5px 15px;
+}
+.dfHelp>h2{
+  margin: 0;
+  font-size: 16px;
+}
+.bigimg {
   display: block;
   margin-left: auto;
+  margin-top: 15px;
   margin-right: auto;
   width: 80%;
 }
-/* end shinyhelper */
+
+#customWhichCols,#customWhichFields,.form-group {
+  display: inline-block;
+}
+
+/* end help text */
 
 /* Make the labels less obnoxious */
 label {color: black; font-weight: 400; text-align: justify;}
@@ -116,9 +136,10 @@ ul.nav>li>a {
 
 
 /* make buttons more compact */
-.btn {
+.btn,.dfHelp>div>button {
   padding: 0 6px 0 6px;
   margin-left: 6px;
+  margin-top: 5px;
 }
 
 /* To line up the selection widgets for available transforms*/
@@ -155,9 +176,10 @@ li.paginate_button.active>a {
 }
 
 
-p,p>a {
+p,p>a,.dfHelp>p,.regulartext {
   text-align: justify;
   font-size:  12px;
   font-weight: 100;
+  color: black;
   font-stretch: semi-condensed;
 }
