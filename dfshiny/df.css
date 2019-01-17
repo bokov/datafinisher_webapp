@@ -58,6 +58,13 @@ h3 {font-family: "Cardo", "Times New Roman", serif;}
   right: 20px;
   top: -20px;
 }
+
+img.bigimg {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 80%;
+}
 /* end shinyhelper */
 
 /* Make the labels less obnoxious */

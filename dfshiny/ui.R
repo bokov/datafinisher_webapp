@@ -11,13 +11,33 @@ by law and your institution's policies to process your data through this app;
 patterns in order to improve the usability of this app; and 3) that you will 
 hold the author and deployer of this app harmless in the event of any adverse 
 consequences of your use of it.")
-,h4('Instructions'),p(class='regulartext',"This web app is designed to 
-post-process i2b2 extracts produced by "
-,a(href='https://github.com/UTHSCSA-CIRD/datafinisher','DataFinisher')
-,".",strong("Here is some ",a(href='demodata.csv',"simulated data"
-                              ,target='_blank'))
-," (adapted from ",a(href='http://i2b2.org/','https://i2b2.org/'),") "
-,"for you to download and then upload back so you can try out DataFinisher")
+,h4('Instructions'),p(class='regulartext',"DataFinisher is part of a pipeline for 
+getting data from an i2b2 query into a standardized tabular form compatible with
+Excel, SAS, R, and almost any other software. The overall pipeline looks like 
+this:",br(),img(class='bigimg',src='docs/i2b2_db_df.png'),br(),"The KUMC-developed DataBuilder
+app extracts the visits selected by an i2b2 query along with user-specified 
+data elements as a SQLite database file that is like a miniature version of the 
+i2b2 database containing only the requested patients, visits, and observations. 
+The job of ",HTML('Data<i>Finisher</i>')," is to 'finish the job' by taking this 
+file and turning it into a plain-text (comma-delimited, tab-delimited, etc.) 
+spreadsheet where each visit is a row (sorted by patient number and date) and 
+each i2b2 data element as a column. Though this is an ordinary spreadsheet, 
+there is additional metadata embedded in it that DataFinisher uses to let the 
+user change how the data is represented and with what granularity. So you could 
+break out the same i2b2 variable into multiple columns, transform data into 
+more convenient formats, and filter which observations show up in a given column.
+You can even create your own custom rules for transforming data.")
+,p("To use DataFinisher, you can upload either a SQLite db file created by 
+DataBuilder or a spreadsheet that has been previously created by DataFinisher.
+This means that you can keep coming back and amending how your data is 
+represented at your convenience without having to submit a new i2b2 
+data-extraction request.")
+,p(strong("If you do not have a file to try this on, here is some simulated data 
+in",a(href='demodata.csv',".csv format",target='_blank'),"and in"
+,a(href='demodata.db',"SQLite .db format",target='_blank'))
+," (adapted from ",a(href='http://i2b2.org/','https://i2b2.org/'),"). These are
+demo datasets that contain no PHI, for you to download and then upload back so 
+you can try out this app.")
 ,h4('About'),p(class='regulartext',"Written by "
 ,a(href='mailto:bokov@uthscsa.edu',"Alex F. Bokov, Ph.D."),"at "
 ,a(href='http://deb.uthscsa.edu/services_cird.html'
@@ -118,24 +138,24 @@ shinyUI(fluidPage(
                   ,textInput('customTrName'
                              ,'Choose a name for your transformation'
                              ,'custom',width='80vh') %>% 
-                    helper(type='inline',content='placeholder',colour=hcol)
+                    helper(type='inline',content='placeholderName',colour=hcol)
                   # description
                   ,textAreaInput('customTrDesc'
                                  ,'Please write a brief description of what you
                                    intend for your custom column transformation
                                    to be (required)',width='80vh') %>% 
-                    helper(type='inline',content='placeholder',colour=hcol)
+                    helper(type='inline',content='placeholderDesc',colour=hcol)
                   # multi-select columns
                   ,uiOutput('customWhichCols') %>% 
-                    helper(type='inline',content='placeholder',colour=hcol)
+                    helper(type='inline',content='placeholderCols',colour=hcol)
                   # fields to return
-                  ,hidden(uiOutput('customWhichFields') %>% 
-                            helper(type='inline',content='placeholder',colour=hcol))
+                  ,hidden(uiOutput('customWhichFields')) %>% 
+                            helper(type='inline',content='placeholderFields',colour=hcol)
                   # aggregation
                   ,hidden(selectInput('customAggregate'
                                 ,'If multiple values exist for the same visit, how do you wish to aggregate them?',selectize = F
-                               ,choices='') %>% 
-                            helper(type='inline',content='placeholder',colour=hcol))
+                               ,choices='')) %>% 
+                            helper(type='inline',content='placeholderAgg',colour=hcol)
                   # qb widget
                   ,hidden(a(id='customQBhead'
                      ,class='btn btn-default'
@@ -151,7 +171,7 @@ shinyUI(fluidPage(
                        #,'Placeholder Text'
                        ,queryBuilderOutput('qbtest')
                        ) %>% 
-                    helper(type='inline',content='placeholder',colour=hcol)
+                    helper(type='inline',content='placeholderQB',colour=hcol)
                   # save
                   ,disabled(actionButton('customSave','Save'))
                   # cancel
