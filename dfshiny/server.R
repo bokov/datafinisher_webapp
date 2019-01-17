@@ -1,8 +1,10 @@
-library(shiny); library(shinyjqui); library(bsplus); library(queryBuilder);
-library(reticulate); library(readr);
+library(shinyjqui); library(bsplus); library(reticulate); library(readr);
+
+# reminder: the interactive debugger for reticulate is repl_python 
 
 # load various useful stuff
 source('templates.R');
+source('www/docs/helptext.R')
 
 dumpOutputCols <- function(id='dumpcols',input=input,rv=rv,...){
   js <- sprintf("
@@ -12,13 +14,14 @@ dumpOutputCols <- function(id='dumpcols',input=input,rv=rv,...){
   if(vv.length>0) oo[kk]=vv;});
   Shiny.onInputChange('%s',oo);
         ",id);
-  runjs(js); runjs(js);
+  runjs(js); 
   cat('\n*** dumping column info ***\n');
-  sapply(names(input$dumpcols),function(ii) {
-    rv$dfinfolist[[ii]]$chosen[unlist(input$dumpcols[[ii]])]
-    },simplify=F);
-  cat(jsonlite::toJSON(rv$dumpcols,pretty=1)
-      ,file=paste0('dumpcols_',as.numeric(Sys.time()),'.json'));
+  warn('dumpOutputCols is disabled pending rewrite to no longer use dfinfolist')
+  # sapply(names(input$dumpcols),function(ii) {
+  #   rv$dfinfolist[[ii]]$chosen[unlist(input$dumpcols[[ii]])]
+  #   },simplify=F);
+  # cat(jsonlite::toJSON(rv$dumpcols,pretty=1)
+  #     ,file=paste0('dumpcols_',as.numeric(Sys.time()),'.json'));
 }
 
 # attach a proper index to a sortable input
@@ -27,12 +30,12 @@ sortableWatcher<-function(targetid,inputid
   # if targetid has no leading hash, add one
   if(!grepl('^#',targetid)) targetid <- paste0('#',targetid);
   # if inputid has a leading hash remove it
-  #inputid <- gsub('^#','',inputid);
   if(missing(inputid)) inputid <- targetid;
+  inputid <- gsub('^#','',inputid);
   if(missing(selector)) selector <- paste0(targetid,'>div');
   js <- sprintf("
   $('%1$s').sortable().on('%2$s',function(event,ui){
-    Shiny.onInputChange('uigroup','chosenid');
+    Shiny.onInputChange('uigroup','%1$s');
     Shiny.onInputChange('%3$s', $('%4$s').map(function(){
                 return this.id}).get())})"
                 ,targetid,event,inputid,selector);
@@ -40,163 +43,96 @@ sortableWatcher<-function(targetid,inputid
   runjs(js);
 }
 
-#' validNames: make sure a name is unique and has legal characters
-#'
-#' @param newname         string
-#' @param existingnames   character vector
-#' @param id              optional string, ID of a textInput
-#' @param session         current session (optional)
-#'
-#' @return uniquified name, with side effect of updating a textInput
-#'         if ID given
-validNames <- function(newname,existingnames=c(),id=NULL
-                       ,session=getDefaultReactiveDomain()){
-  name0 <- gsub('[_.]+','_',make.names(newname));
-  name1 <- tail(gsub('[_.]+','_',make.names(c(existingnames,name0)
-                                            ,unique=T)),1);
-  if(!is.null(id)) updateTextInput(session,id,value=name1);
-  return(name1);
-}    
-
-addChosen <- function(incolid,availableid,rv,input,finalid=availableid){
-  # create the data structure for the new output column
-  incoldata <- rv$dfinfolist[[incolid]];
-  payload <- incoldata$available[[availableid]][c('extr','args','ruledesc'
-                                                  ,'split_by_code','colidtmpl'
-                                                  ,'parent_name','own_name'
-                                                  ,'filter')];
-  # derive needed IDs
-  targetid <- paste0('#chosen-',incolid);
-  selid <- paste0('sel-',finalid);
-  finalid <- gsub('\\{0\\}',incolid,payload$colidtmpl);
-  # if this is code-specific, append the selected codes
-  if(payload$split_by_code){
-    finalid <- paste0(finalid,'_',gsub('[^A-Za-z0-9_]','_'
-                                       ,paste(gsub('^.*:','',input[[selid]])
-                                              ,collapse='_')))};
-  payload$own_name <- finalid;
-  payload$delbid <- paste0('delb-',finalid);
-  # TODO: replace this with HTML template
-  if(!payload$own_name %in% names(rv$dfinfolist[[incolid]]$chosen)){
-    insertUI(targetid,where='beforeEnd',immediate=T
-             ,ui=withHtmlTemplate(payload,templates$divchosen
-                                  ,delbutton=actionButton(payload$delbid
+addChosen <- function(incolid,availableid,userArgs=list(),input,...){
+  obj <- py$dfmeta[incolid];
+  # add object. If it already exists in the python backend, it 
+  # will overwrite/update the existing values and return NULL 
+  # If it doesn't already exist, it will return a list with all
+  # the values needed to create the HTML below
+  
+  # First, obtain the user input if it exists
+  # TODO: disable the accompanying Add/Update button if selectize is empty
+  if(missing(userArgs)){
+    userArgs <- list(CC=input[[obj$rules[[availableid]]$selid]])};
+  
+  objinfo <- obj$prepChosen(obj$rules[[availableid]],userArgs=userArgs);
+  if(!is.null(objinfo)){
+    insertUI(paste0('#',objinfo$divIDchosen),where='beforeEnd',immediate=T
+             ,ui=withHtmlTemplate(objinfo,templates$divchosen
+                                  # create a button specifically for removing
+                                  # the HTML being created here
+                                  ,delbutton=actionButton(objinfo$delbid
                                                           ,'Remove'
                                                           ,class='btn-danger'))
-             );
-    runjs(sprintf("$('%s').trigger('sortupdate')",finalid));
-    onclick(payload$delbid,removeChosen(incolid,payload$own_name,rv));
+    );
+    runjs(sprintf("$('#%s').trigger('sortupdate')",objinfo$divIDchosen));
+    onclick(objinfo$delbid
+            ,removeChosen(objinfo$parent_name,objinfo$longname,rv));
   }
-             # ,ui=div(id=finalid,class='panel panel-body panel-default'
-             #         ,finalid
-             #         ,actionButton(delbid,'Remove'
-             #                       ,class='btn-danger'),br()
-             #         ,span(payload$ruledesc,class='annotation')))\
-  
-    #}
-  # add it to the chosen columns
-  rv$dfinfolist[[incolid]]$chosen[[payload$own_name]] <- payload;
-  
 }
 
-removeChosen <- function(incolid,finalid,rv){
+removeChosen <- function(incolid,finalid,...){
   finalid <- gsub('^#','',finalid);
-  rv$dfinfolist[[incolid]]$chosen[[finalid]]<-NULL;
-  # turning finalid back into an #id selector
-  finalid <- paste0('#',finalid);
-  removeUI(finalid,immediate = T);
-  #runjs(sprintf("$('%s').sortable('refresh')",finalid));
-  runjs(sprintf("$('%s').trigger('sortupdate')",finalid));
+  objinfo <- py$dfmeta[incolid]$chosen[[finalid]];
+  py$dfmeta[incolid]$unprepChosen(finalid);
+  removeUI(paste0('#',objinfo$longname),immediate = T);
+  runjs(sprintf("$('#%s').trigger('sortupdate')",objinfo$divIDchosen));
 }
-
 
 withHtmlTemplate <- function(env,template,...){
   env <- c(env,list(...),text_=template);
   do.call(htmlTemplate,env);
 }
 
-#' getAvailable: provide the actual available rules
-#' specification for a DFCol object
-#'
-#' @param incolid: char, name of parent dfcol
-#' @param obj: DFMeta.dfcols attribute
-#'
-#' @return list
-#'
-#' @examples
-cleanDFCols <- function(incolid,obj){
-  obj <- obj[[incolid]]; out <- list();
-  for(ii in c('as_is_col','colmeta','dfcol','unique_codes')){
-    out[[ii]] <- obj[[ii]];
-  }
-  # catch static incols and set their coldesc to something else
-  out$incoldesc <- if(out$as_is_col) '(static column)' else {
-    out$colmeta$name};
-  out$available <- flattenRules(incolid,obj$rules);
-  out$divIDavailable <- paste0('avail-',incolid);
-  out$ccd_choices <- if(!out$as_is_col && 
-                        !is.null(out$colmeta$ccd_list)){
-    strsplit(out$colmeta$ccd_list,',')[[1]]} else NULL;
-  out$innerDivs <- lapply(out$available,function(xx){
-    xxsel<-if(xx$split_by_code && !is.null(out$ccd_choices)){
-      selid <- paste0('sel-',xx$own_name);
-      div(selectizeInput(selid,label='For the following codes:'
-                         ,choices=out$ccd_choices)
-          ,class='transform-argsel')} else span();
-    withHtmlTemplate(xx,templates$divavailable,xxsel=xxsel);
-  });
-  out$divavailable <- withHtmlTemplate(
-    out,templates$multidivavailable
-  );
-  
-  out$divIDchosen <- paste0('chosen-',incolid);
-  out$chosen <- list();
-  out$incolid <- obj$name;
-  out$incolui <- if(out$as_is_col) p() else {
-    withHtmlTemplate(out,templates$incolui)};
-  out$divfull <- withHtmlTemplate(out,templates$divfull);
-  if(!out$as_is_col){
-    jqui_sortable(ui=paste0('#',out$divIDchosen)
+# create the starting UI elements for an incol 
+# (calls buildRule for individual available rules)
+buildDFCols <- function(incolid,rulenames=T){
+  # apparently py magically just shows up in scope without being passed
+  obj <- py$dfmeta[incolid]$getDict();
+  if(missing(rulenames)) myrules <- obj$rules else {
+    myrules <- try(obj$rules[rulenames])
+    if(class(myrules)[0] == 'try-error'){
+      print('Uh oh, list subsetting problem');
+      browser();}}
+  out0 <- lapply(myrules,buildRule,unique_codes=obj$unique_codes);
+  out1 <- withHtmlTemplate(obj,templates$multidivavailable,innerDivs=out0);
+  out2 <- if(obj$as_is_col) span() else{
+    withHtmlTemplate(obj,templates$incolui,divavailable=out1)};
+  out3 <- withHtmlTemplate(obj,templates$divfull,incolui=out2);
+  if(!obj$as_is_col){
+    jqui_sortable(ui=paste0('#',obj$divIDchosen)
                   ,options=list(axis='y',items='div'))};
-  out;
+  out3;
 }
 
-#' flattenRules: take a rules list and make each
-#' rule a flat named list so the overall nesting 
-#' max depth is 2
-#'
-#' @param incolid: char, name of parent dfcol
-#' @param rules: named list
-#'
-#' @return list
-#'
-#' @examples
-flattenRules <- function(incolid,rules){
-  out <- list();
-  for(ii in rules){
-    iiout <- ii[c('suggested','criteria','split_by_code','ruledesc','filter')];
-    for(jj in ii$extractors){
-      # make name
-      jjid <- sprintf(gsub('\\{0\\}','%s',jj[2]),incolid);
-      # flatten and merge
-      jjout <- as.list(setNames(jj[1:3],c('extr','colidtmpl','args')));
-      jjout$addbid <- paste('addb',jjout$extr,jjid,sep='-');
-      jjout$parent_name <- incolid;
-      jjout$own_name<- jjid;
-      # assign
-      out[[jjid]]<-c(jjout,iiout);
-    }
-  }
-  out;
+# Build an 'available' div for a single rule
+buildRule <- function(rule,unique_codes,rulename,incolid
+                      ,selclass='transform-argsel'
+                      ,sellab='For the following codes:'
+                      ,template=templates$divavailable){
+  if(missing(rule)) rule <- py$dfmeta[incolid]$rules[rulename];
+  if(missing(unique_codes)) {
+    unique_codes <- py$dfmeta[rule$parent_name]$unique_codes;}
+  rsel <- if(rule$split_by_code && length(unique_codes)>1){
+    div(class=selclass,selectizeInput(rule$selid,multiple=T,label=sellab
+                                      ,choices=unique_codes))} else span();
+  withHtmlTemplate(rule,template,xxsel=rsel)
 }
 
+#' validNames: make sure a name is unique and has legal characters
+validNames <- function(newname #,existingnames=c()
+                       ,id,session=getDefaultReactiveDomain()){
+  outname <- py$dfmeta$makeNameUnq(newname,'rulename',maxlen=int(12))
+  if(!is.null(id)) updateTextInput(session,id,value=outname);
+  return(outname);
+}    
+
+# shinyServer ----
 shinyServer(function(input, output, session) {
-  
+  # server init ----
   # load the stuff we need from datafinisher
+  observe_helpers(help_dir = 'www/docs');
   source_python('df_reticulate.py');
-  dfns <- py_run_string('from df_fn import shortenwords,dropletters'
-                        ,local=T);
-  
   runjs("$('#customQB').on('hidden.bs.collapse',function(){
         Shiny.onInputChange('qbtest_out',null);
         Shiny.onInputChange('qbtest_validate',true);
@@ -209,136 +145,112 @@ shinyServer(function(input, output, session) {
     ,orderInput('dest', 'Dest', items = NULL
                , placeholder = 'Drag items here...')
     ));
-
-  rvp <- reactiveValues();
   
-  #onclick('makecustom',show('customui'));
-  
-  # Renders a sample of the uploaded data and as a 
-  # side effect creates the UI for manipulating it.
-  # TODO: Find a way to trigger the processing without
-  #       having to click this tab.
-  output$tb_infile_prev <- renderDataTable({
-    # Don't attempt to produce output until file exists
-    req(input$infile);
-    # Peek at the file type. If it's CSV, use read_csv()
-    if(input$infile$type == 'text/csv'){
-      dat <- read_csv(input$infile$datapath,n_max=1000)
-    } else {
-      # If not csv, assume tab-delimited and *try* 
-      # read_tsv()
-      dat <- try(read_tsv(input$infile$datapath,n_max=1000))
-      # if there was an error or there is only one
-      # column in the result, assume we guessed wrong
-      # and fail over to using read_csv() after all
-      # TODO: more general guessing of delimiters or
-      #       optional user-supplied delimiters
-      if(is(dat,'try-error')||ncol(dat)==1){
-        dat <- read_csv(input$infile$datapath,n_max=1000);
-      };
-    }
-    
-    # Now we have a sample data-file!
-    rvp$dfmeta <- py$DFMeta(names(dat),as.character(dat[1,])
-                            ,suggestions=py$autosuggestor);
+  # create dfmeta ----
+  observeEvent(input$infile,{
+    req(input$infile$datapath);
+    # py_run_string(sprintf("testfile='%s'",input$infile$datapath));
+    # py_run_string('from df_fn import handleDelimFile');
+    # repl_python();
+    # browser();
+    py_run_string(sprintf("dfmeta=DFMeta(fref='%s',suggestions=autosuggestor)"
+                          ,input$infile$datapath));
+    # Indicator for the rest of the webapp that the core object is ready
+    rv$have_dfmeta <- Sys.time();
+    hide('termsofuse');
     message('\n*** dfmeta created ***\n');
-    
-    # data for populating UI and recording choices
-    rv$dfinfolist <- sapply(rvp$dfmeta$inhead
-                            ,function(ii) {
-                              cleanDFCols(ii,rvp$dfmeta$incols)
-                              },simplify=F);
-    message('\n*** dfinfolist created ***\n');
-    
-    # all possible Add/Update names and chosen divs
-    # rv$divIDs <- do.call(
-    #   rbind,sapply(rv$dfinfolist,function(xx){
-    #     if(!xx$as_is_col) data.frame(chosen=xx$divIDchosen
-    #                                 ,addbid=sapply(xx$available
-    #                                                ,function(yy)yy$addbid)
-    #                                 ,stringsAsFactors = F)},simplify=F));
-    # baseline button values ...no longer needed?
-    isolate({divIDs <- setNames(data.frame(t(do.call(
-      cbind,sapply(rv$dfinfolist,function(xx) {
-        if (length(xx$available)>0){
-                              sapply(xx$available,function(yy) {
-                                with(yy
-                                     ,cbind(parent_name,own_name
-                                            ,addbid))})
-                              }}))),stringsAsFactors = F)
-      ,c('incolid','availableid','addbid'));
-    divIDs$chosenid <- paste0('chosen-',divIDs$incolid);
-    });
-    
-    message('\n*** divIDs created ***\n');
-    
+  });
+  
+  
+  # read input data ----
+  # Renders a sample of the uploaded data  
+  output$tb_infile_prev <- renderDataTable({
+    req(rv$have_dfmeta);
+    # TODO: temporary, will create simpler py-side method
+    #py_run_string('dfmeta.fhandle.seek(0)');
+    #dat<-read_delim(py_eval('dfmeta.fhandle.read(1024000)')
+    #                ,py$dfmeta$data$dialect$delimiter,n_max=500);
+    # return a sample of the input for the 'Input Data' tab
+    message('\n*** dat loaded ***\n');
+    show(selector = '#maintabs>.tabbable');
+    return(read_delim(paste0(py$dfmeta$sampleInput(nrows = 300)
+                             ,collapse='\n'),py$dfmeta$data$dialect$delimiter));
+  },options=list(scrollY='50vh',scroller=T,scrollX=T,processing=T));
+
+  outputOptions(output,'tb_infile_prev',suspendWhenHidden=F);
+  
+  # populate the 'Transform Data' tab ----
+  output$tb_transform <- renderUI({
+    req(rv$have_dfmeta)
+    # create startingdivs ----
+    # Just the column divs, as built by buildDFCols
+    # This is the slowest step
+    rv$dfstartingdivs <- sapply(py$dfmeta$inhead,buildDFCols,simplify=F);
+    message('\n*** dfstartingdivs created ***\n');
+
     # This is the part that detects clicks on the Add/Update buttons
     # Have to wrap the expr argument in substitute because otherwise
     # it doesn't correctly read the ii value. Wierd.
+    for(xx in py$dfmeta$getColIDs(asdicts=T
+                                  ,ids='incolid'
+                                  ,childids=c('rulename','addbid')
+                                  ,childtype='rules')){
+      eval(substitute(
+        onclick(addbid,addChosen(incolid,rulename,rv=rv,input=input),add=T)
+        ,env=xx));
+    }
+    message('\n*** addbid onclicks created ***\n');
     
-    # TODO: prepend the selected code if the rule takes an argument
-    isolate({for(ii in divIDs$addbid){
-      ids <- subset(divIDs,addbid==ii);
-      eval(substitute(onclick(xx
-                              ,addChosen(yy$incolid[1]
-                                         ,yy$availableid[1]
-                                         ,rv,input)
-                              ,add=T),env=list(xx=ii,yy=ids)))};
-    });
-    
-    # Save the divIDs for later access
-    rv$divIDs <- divIDs;
-
-        # create column controls
+    # create infodivs (collapsible column controls) ----
+    statdivs <- py$dfmeta$getStatIDs();
     infodivs <- bs_accordion('infodivs');
     infodivs <- bs_set_opts(infodivs,use_heading_link=T);
-    for(ii in rvp$dfmeta$inhead){
+    for(ii in names(rv$dfstartingdivs)){
       isolate({
-        if(rv$dfinfolist[[ii]]$as_is_col){
+        if(ii %in% statdivs){
           infodivs <- htmltools::tagAppendChild(
             infodivs
-            ,div(class='panel panel-default pn-colstatic'
+            ,div(class='panel panel-default pn-colstatic dfcol-static'
                  ,div(class='panel-heading',ii)
-                 ,div(class='panel-body',rv$dfinfolist[[ii]]$divfull)));
+                 ,div(class='panel-body',rv$dfstartingdivs[[ii]])));
         } else {
-          infodivs<-bs_append(infodivs,ii,rv$dfinfolist[[ii]]$divfull);
+          infodivs<-bs_append(infodivs,ii,rv$dfstartingdivs[[ii]])
         }
-        });
+      });
     }
     runjs("$('.collapse').on('shown.bs.collapse', function (e) {
         Shiny.onInputChange('activecolid',($('.in>.panel-body>div').attr('id')));
     })")
     message('\n*** infodivs created ***\n');
     
-    
+    # update outputs ----
     # Populate the ui_transform, needed by the 'Transform Data' panel
-    rv$ui_transform <- div(infodivs,id='infodivs_parent');
+    ui_transform <- div(infodivs,id='infodivs_parent');
     message('\n*** ui_transform created ***\n');
     
-    # populate the 'Transform Data' tab
-    output[['tb_transform']] <- renderUI(isolate(rv$ui_transform));
-    
-    # make the chosen divs sortable and register inputs
-    for(ii in unique(divIDs$chosenid)){
-      eval(substitute(sortableWatcher(ii)))};
     runjs("Shiny.onInputChange('choosewait',+ new Date())");
     
-    # set output options so stuff starts rendering before tab active
-    outputOptions(output,'tb_infile_prev',suspendWhenHidden=F);
-    outputOptions(output,'tb_transform',suspendWhenHidden=F);
-    
-    # return a sample of the input for the 'Input Data' tab
-    return(head(dat[-1,],100));
+    show(selector = '#maintabs>.tabbable');
+    ui_transform;
   });
   
+  # create help content ----
+  lapply(names(helptext),function(ii) {
+    onclick(ii,shinyalert(text = helptext[[ii]],confirmButtonCol = hcol
+                          ,className = 'dfHelp'))});
+
+    # set output options so stuff starts rendering before tab active
+  outputOptions(output,'tb_transform',suspendWhenHidden=F);
+
+  # Wait for the divIDchosen to load and then make them sortable
   observeEvent(input$choosewait,{
     print('Checking choosewait');
     if(input$choosewait!=0){
-      for(ii in unique(rv$divIDs$chosenid)){
+      for(ii in unlist(py$dfmeta$getColIDs(ids='divIDchosen'))){
         eval(substitute(sortableWatcher(ii)))};
       print('Running sortableWatcher');
       runjs("
-if( $('[id^=chosen-].ui-sortable').length == 0 ) {
+if( $('[id^=c-].ui-sortable').length == 0 ) {
   xx = + new Date() } else {
     /* This is where we track the currenly opened column panel */
     $('.collapse').on('shown.bs.collapse', function (e) {
@@ -354,53 +266,51 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
     xx = 0}; Shiny.onInputChange('choosewait',xx);");};
   });
   
-  # observeEvent(input$activecolid,{
-  #   if(input$activecolid=='(none selected)'){
-  #     disable('makecustom');hide('customui');} else {
-  #       # TODO elsewhere:
-  #       #   delimiter for multiselect
-  #       enable('makecustom')}});
   
+  
+  # custom rule names ----
   # make sure custom rules have names that are safe, legal, 
   # and unique
-  observeEvent(c(input$customTrName,input$customSave),{
-    validNames(input$customTrName,names(rvp$dfmeta$rules)
-               ,id='customTrName');
+  observeEvent(c(input$customTrName,input$infile,rv$have_dfmeta),{
+    req(rv$have_dfmeta);
+    validNames(input$customTrName,id='customTrName');
     });
   
-  # offer a choice of columns from which to chose the ones that will have
+  # offer a choice of columns from which to select ones that will have
   # access to this transform. Only fields available in all these columns
   # will be options in the transform
   output$customWhichCols <- renderUI({
-    req(rv$divIDs);
+    req(rv$dfstartingdivs);
     if(input$choosewait==0){
       selectizeInput('customSelCols'
                      ,label='Select the main column or columns in your data for
                              which this transformation should be available:'
-                     ,choices=unique(rv$divIDs$incolid),multiple=T)} else {
+                     ,choices=sort(unlist(py$dfmeta$getColIDs(ids='incolid')))
+                     ,multiple=T)} else {
                        span()}});
   
   # when choice of columns changes, update the permitted list of variables
   observeEvent(c(input$customSelCols,input$customTrDesc),{
+    req(rv$have_dfmeta)
     applicable <- T; out <- filterlist;
     for(ii in input$customSelCols){
+      iimeta <- py$dfmeta[ii]$colmeta
       applicable <- applicable & sapply(filterlist,function(xx) {
-        eval(xx$criteria,envir=rv$dfinfolist[[ii]]$colmeta)});
-      if(!is.null(rv$dfinfolist[[ii]]$colmeta$ccd_list)){
-        newcodes <- strsplit(rv$dfinfolist[[ii]]$colmeta$ccd_list,",")[[1]];
+        eval(xx$criteria,envir=iimeta)});
+      if(!is.null(iimeta$ccd_list)){
+        newcodes <- strsplit(iimeta$ccd_list,",")[[1]];
         out$concept_cd$values <- union(out$concept_cd$values,newcodes);
         } else cat('\n',ii,' has no ccd_list\n');
       };
     # They have NULL values not because they lack codes but 
-    # because they have too many. Catch those cases and turn
     # them into text instead of selectives
     if(is.null(out$concept_cd$values)){
       out$concept_cd$values <- NULL;
       out$concept_cd$input <- 'text';
     }
-    validchoices<-names(rv$currentFilterlist <- out[applicable]);
+    rv$currentFilterlist <- out[applicable];
+    validchoices <- sapply(rv$currentFilterlist,`[[`,'name');
     print('Updated rv$currentFilterList');
-    
     ready <- !is.null(input$customTrDesc) && input$customTrDesc != '' &&
       !is.null(input$customSelCols) && input$customSelCols != '';
     if(ready & length(validchoices)==0) {
@@ -411,7 +321,7 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
     }
     if(ready) {
       rv$qbtest<- queryBuilder(filters=unname(rv$currentFilterlist)
-                               ,allow_empty=T);
+                               ,allow_empty=T,height = '100%');
       rv$customWhichFieldsReady <- selectizeInput('customSelFields'
                                                   ,label='Select the field or
                                                         fields you wish this
@@ -419,18 +329,18 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
                                                         return:'
                                                   ,multiple=T
                                                   ,choices=validchoices);
-      show('customWhichFields');
+      output$customWhichFields <- renderUI(rv$customWhichFieldsReady);
+      show('customWhichFieldsGrp');
       show('customQBhead');
     } else {
-      hide('customWhichFields');
+      hide('customWhichFieldsGrp');
       runjs("$('#customQB').collapse('hide')");
       hide('customQBhead');
-      hide('customAggregate');
+      hide('customAggregateGrp');
     }
   });
-  
-  output$customWhichFields <- renderUI(rv$customWhichFieldsReady);
-  
+
+  # re/create the querybuilder UI
   output$qbtest <- renderQueryBuilder({
     print('rendering qbtest');
     runjs("Shiny.onInputChange('qbinit',+ new Date())");
@@ -448,6 +358,7 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
     runjs("$('#qbtest').queryBuilder('reset')");
     });
   
+  # update aggregator selection widget
   observeEvent(c(input$customSelFields,input$customTrDesc
                  ,input$qbtest_validate)
                ,{
@@ -479,96 +390,120 @@ if( $('[id^=chosen-].ui-sortable').length == 0 ) {
                                              for the same visit, how do you wish
                                              to aggregate them?'
                                      ,choices=choices);
-                   show('customAggregate');
+                   show('customAggregateGrp');
                    if(is.null(input$qbtest_validate)||input$qbtest_validate) {
                      enable('customSave')
                      } else disable('customSave');
                    } else {
-                     hide('customAggregate');
+                     hide('customAggregateGrp');
                      disable('customSave');
                    }
                    });
-  
+  # If cancel pressed on custom rule tab, reset to empty values
   observeEvent(input$customCancel,{
-    # reset to empty values
+    updateSelectizeInput(session,'customSelFields',selected=character(0));
     updateSelectizeInput(session,'customSelCols',selected=character(0));
     updateTextAreaInput(session,'customTrDesc',value='');
-    updateTextInput(session,'customTrName',value = 'custom');
-  });
-
-  observeEvent(input$customSave,{
-    forincols <- input$customSelCols;
-    trname<-validNames(input$customTrName,names(rvp$dfmeta$rules)
-                       ,id='customTrName',session);
-    nametemplate<-paste0('{0}_',trname);
-    # the save button should be disabled if the input is 
-    # invalid, so if input$qbtest_out is null, that's because
-    # the user has chosen not to filter
-    filter <- if(is.null(input$qbtest_out)||length(input$qbtest_out$rules)==0){
-      "TRUE";
-    } else {
-      queryBuilder:::recurseFilter(input$qbtest_out);
-    }
-    transform <- list(
-       extr=trname
-      ,colidtmpl=nametemplate
-      ,ruledesc=input$customTrDesc
-      ,fields=input$customSelFields
-      ,aggregate=input$customAggregate
-      ,filter=filter
-      # compatibility
-      ,args=NA
-      ,criteria=sprintf("colid %%in%% %s",paste(forincols,collapse=','))
-      ,split_by_code=F
-      ,suggested=F
-      ,extractors=list(list(trname,nametemplate,list()))
-      );
-    # empty out description field
-    updateTextAreaInput(session,'customTrDesc',value='');
-    # TODO: why is everything after the description field automatically 
-    # cleared when "Save" is clicked? Useful, but troubling.
-    isolate({
-      # add to the master rules list
-      rvp$dfmeta$rules[[trname]]<-transform;
-      # for each eligible main column...
-      for(ii in forincols) {
-        # prepare it
-        iiavailable <- flattenRules(ii,list(transform))[[1]];
-        # insert it into the available list for that column
-        rv$dfinfolist[[ii]]$available[[iiavailable$own_name]]<-iiavailable;
-        # add to the available UI divs
-        insertUI(paste0("#avail-",ii,">div"),'beforeEnd'
-                 , withHtmlTemplate(iiavailable,templates$divavailable
-                                    ,xxsel=span())
-                 ,immediate=T);
-        # update the divIDs data.frame
-        rv$divIDs<-rbind(rv$divIDs
-                         ,iivals<-with(iiavailable
-                               ,c(parent_name,own_name,addbid
-                                  ,paste0('chosen-',parent_name))));
-        # instrument the Add/Update
-        eval(substitute(onclick(iivals[3]
-                                ,addChosen(iivals[1]
-                                           ,iivals[2],rv,input),add=T)
-                        ,env=list(iivals=iivals)));
-        };
-      });
+    validNames('custom',id='customTrName');
   });
   
+  # When the save button is pressed on Custom Transforms tab
+  observeEvent(input$customSave,{
+    # customSave ----
+    rulename <- validNames(input$customTrName,id='customTrName');
+    selector <- if(is.null(input$qbtest_out)||length(input$qbtest_out$rules)==0){
+      "ALL";
+    } else input$qbtest_out;
+    newrule <- list(
+      rulename=rulename
+      ,ruledesc=input$customTrDesc
+      ,split_by_code=F
+      ,selector=selector
+      ,fieldlist=input$customSelFields
+      ,aggregator=input$customAggregate
+      ,custom=T
+    );
+    # Add the newly created rules to dfmeta and turn the output (captured 
+    # inline as newinfo) into HTML (the newdivs final output in this chain)
+    newdivs <- lapply(newinfo<-py$dfmeta$userDesignedRule(
+      newrule,rulename,as.list(input$customSelCols))
+      ,buildRule,unique_codes=c());
+    rv$newdivs <- newdivs; rv$newinfo <- newinfo;
+  });
+  
+  
+  
+  # Populate the new divs, new info created in Custom Transforms
+  observeEvent(c(rv$newdivs,rv$newinfo),{
+    for(ii in names(rv$newinfo)){
+      # insert the new div
+      insertUI(paste0('#',py$dfmeta[ii]$divIDavailable,'>div')
+               ,'beforeEnd',rv$newdivs[[ii]],immediate = T);
+      # add onclick event to allow actually adding/removing this rule
+      eval(substitute(onclick(addbid
+                              ,addChosen(parent_name,rulename,rv=rv,input=input)
+                              ,add=T),env=rv$newinfo[[ii]]));
+    };
+    # empty out description field and selectizeinput fields
+    runjs("$('#customCancel').click()");
+  });
+  
+  # output preview! ----
+  observeEvent(input$outprev,{
+    req(rv$have_dfmeta);
+    hide('outdownload');hide('outwrite');
+    # get the output column order
+    chsnames <- sapply(py$dfmeta$getColIDs(ids=c('divIDchosen','incolid'))
+                      ,function(xx) setNames(list(input[[xx[1]]]),xx[2]));
+    # TODO: fix this so that Python catches null entries, including where all
+    # are null, so that the web front end doesn't need to
+    chsnames <- chsnames[!sapply(chsnames,is.null)];
+    #.dbg <- try(
+    py$dfmeta$finalizeChosen(chsnames);
+    #);
+    #if(class(.dbg)[1]=='try-error') browser();
+    tempname <- py$dfmeta$processRows(tempfile(),nrows=300);
+    #py$dfmeta$fhandle$seek(0); py$dfmeta$nrows = 3;
+    output$tb_outfile_prev <- renderDataTable(
+      rv$testout <- read_delim(tempname
+                               # TODO: wtf is the second row broken?
+                               ,delim=py$dfmeta$data$dialect$delimiter)[-2,]
+      ,options=list(scrollY='50vh',scroller=T,scrollX=T,processing=T
+                    ,initComplete=I("
+      function(settings, json) {
+        Shiny.onInputChange('tb_outfile_prev_state','loaded');
+      }")));
+    show('outwrite');
+    });
+  
+  # If it's necessary to do something after the dataTable loads, uncomment this
+  # observeEvent and put that behavior into its payload
+  # observeEvent(input$tb_outfile_prev_state,{
+  #   browser();
+  # });
+  
+  observeEvent(input$outwrite,{
+    foutname<-py$dfmeta$processRows(outfile = tempfile()
+                                    ,returnwhat = 'filename');
+    fnicename <- paste0('DF_',gsub('\\.db$','.csv',input$infile$name));
+    output$outdownload <- downloadHandler(filename=fnicename
+                                          ,content=function(con) {
+                                            file.copy(foutname,con)});
+    show('outdownload');
+  });
+
+  # Save the user-controlled parts of the current UI state
+  # to internal variable (currently for testing, in the future might be the
+  # basis for exporting settings for later reuse)
   observeEvent(input$btDumpcols,{
     rv$dumpcols <- dumpOutputCols(input=input,rv=rv);
     cat('\n***\n',names(rv$dumpcols),'\n***\n');
   });
-
-  observeEvent(input$debug,{
-    req(rv$dfinfolist);
-    t_incolid <- names(rv$dfinfolist)[42];
-    t_dat <- rv$dfinfolist[[t_incolid]];
-    
-    browser();
-  });
   
-  output$test <- renderUI({print('rendering test');rv$uitest});
-
+  
+# Testing ----
+  observeEvent(input$debug,{
+    browser();
+   });
 })
 
