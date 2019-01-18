@@ -1,4 +1,4 @@
-library(bsplus); library(reticulate); library(readr);
+library(bsplus); library(reticulate); library(readr); library(shinyjqui);
 
 # reminder: the interactive debugger for reticulate is repl_python 
 
@@ -149,6 +149,11 @@ shinyServer(function(input, output, session) {
   
   # create dfmeta ----
   observeEvent(input$infile,{
+    # if(req(dfile<-parseQueryString(session$clientData$url_search)$dfile)){
+    #   if(dirname(dfile) == trusted_indir && file.exists(dfile)){
+    #     rv$infile <- dfile;
+    #   }
+    # }
     req(input$infile$datapath);
     # py_run_string(sprintf("testfile='%s'",input$infile$datapath));
     # py_run_string('from df_fn import handleDelimFile');
