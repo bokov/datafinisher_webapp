@@ -147,19 +147,31 @@ shinyServer(function(input, output, session) {
     #            , placeholder = 'Drag items here...')
     # );
   
-  # create dfmeta ----
+  # obtain either a pre-existing file or uploaded by user ----
   observeEvent(input$infile,{
     req(input$infile$datapath);
-    # py_run_string(sprintf("testfile='%s'",input$infile$datapath));
-    # py_run_string('from df_fn import handleDelimFile');
-    # repl_python();
-    # browser();
+    rv$infile <- input$infile$datapath;
+    rv$infilename <- input$infile$name;});
+  
+  observeEvent(session$clientData$url_search,{
+    if(!is.null(dfile<-parseQueryString(session$clientData$url_search)$dfile)){
+      dfile <- file.path(trusted_indir,basename(dfile));
+      if(file.exists(dfile)){
+        rv$infile <- dfile;
+        rv$infilename <- basename(dfile);}
+      }});
+  
+  # create dfmeta ----
+  observeEvent(rv$infile,{
+    # put up modal alert
+    shinyalert(title='Please wait.',messages$mLoading
+               ,closeOnEsc = F,showConfirmButton = F);
     py_run_string(sprintf("dfmeta=DFMeta(fref='%s',suggestions=autosuggestor)"
-                          ,input$infile$datapath));
+                          ,rv$infile));
     # Indicator for the rest of the webapp that the core object is ready
     rv$have_dfmeta <- Sys.time();
-    hide('termsofuse');
     message('\n*** dfmeta created ***\n');
+    closeAlert();
   });
   
   
@@ -168,12 +180,10 @@ shinyServer(function(input, output, session) {
   output$tb_infile_prev <- renderDataTable({
     req(rv$have_dfmeta);
     # TODO: temporary, will create simpler py-side method
-    #py_run_string('dfmeta.fhandle.seek(0)');
-    #dat<-read_delim(py_eval('dfmeta.fhandle.read(1024000)')
-    #                ,py$dfmeta$data$dialect$delimiter,n_max=500);
-    # return a sample of the input for the 'Input Data' tab
     message('\n*** dat loaded ***\n');
+    hide('termsofuse');
     show(selector = '#maintabs>.tabbable');
+    # remove modal alert
     return(read_delim(paste0(py$dfmeta$sampleInput(nrows = 300)
                              ,collapse='\n'),py$dfmeta$data$dialect$delimiter));
   },options=list(scrollY='50vh',scroller=T,scrollX=T,processing=T
@@ -278,7 +288,7 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
   # custom rule names ----
   # make sure custom rules have names that are safe, legal, 
   # and unique
-  observeEvent(c(input$customTrName,input$infile,rv$have_dfmeta),{
+  observeEvent(c(input$customTrName,rv$infile,rv$have_dfmeta),{
     req(rv$have_dfmeta);
     validNames(input$customTrName,id='customTrName');
     });
@@ -497,7 +507,7 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
   observeEvent(input$outwrite,{
     foutname<-py$dfmeta$processRows(outfile = tempfile()
                                     ,returnwhat = 'filename');
-    fnicename <- paste0('DF_',gsub('\\.db$','.csv',input$infile$name));
+    fnicename <- paste0('DF_',gsub('\\.db$','.csv',basename(rv$infilename)));
     output$outdownload <- downloadHandler(filename=fnicename
                                           ,content=function(con) {
                                             file.copy(foutname,con)});

@@ -11,3 +11,7 @@ If none of the built-in transformations do what you need them to do, you can cre
 When you want to see how your transformations will look, click  the 'Generate/Update Preview of Results' button. Once it completes, you will get access to the 'Prepare Results for Download Button'. After you click that and  the download is prepared (this may take a while if your file is large) you will see a third button, 'Download Full Results'. This tab does not update automatically. You will need to manually click 'Generate/Update Preview of Results' whenever you want to see the most recent changes you made."
 )
 
+messages <- list(
+  mLoading='DataFinisher is preparing your file. Large files may take a while to prepare.'
+)
+
