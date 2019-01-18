@@ -177,7 +177,11 @@ shinyServer(function(input, output, session) {
     return(read_delim(paste0(py$dfmeta$sampleInput(nrows = 300)
                              ,collapse='\n'),py$dfmeta$data$dialect$delimiter));
   },options=list(scrollY='50vh',scroller=T,scrollX=T,processing=T
-                 ,columns=I(paste0('[',paste0(ifelse(py$dfmeta$inhead %in% py$dfmeta$getDynIDs(),'{className:"dfDyn"}','null'),collapse=','),']'))
+                 ,searching=F
+                 ,columns=I(paste0('[',paste0(
+                   ifelse(py$dfmeta$inhead %in% py$dfmeta$getDynIDs()
+                          ,'{className:"dfDyn"}','null'
+                          ),collapse=','),']'))
                  ));
 
   outputOptions(output,'tb_infile_prev',suspendWhenHidden=F);
@@ -472,6 +476,11 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
                                # TODO: wtf is the second row broken?
                                ,delim=py$dfmeta$data$dialect$delimiter)[-2,]
       ,options=list(scrollY='50vh',scroller=T,scrollX=T,processing=T
+                    ,searching=F
+                    ,columns=I(paste0('[',paste0(
+                      ifelse(py$dfmeta$getHeaders() %in% py$dfmeta$getDynIDs()
+                             ,'{className:"dfDyn"}','null'
+                      ),collapse=','),']'))
                     ,initComplete=I("
       function(settings, json) {
         Shiny.onInputChange('tb_outfile_prev_state','loaded');
