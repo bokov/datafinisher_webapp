@@ -81,8 +81,12 @@ h3 {font-family: "Cardo", "Times New Roman", serif;}
   width: 80%;
 }
 
-#customWhichCols,#customWhichFields,.form-group {
+#customWhichCols,#customWhichFields,#customTrDescGrp,.form-group {
   display: inline-block;
+}
+#customTrDescGrp{
+  display: inline-block;
+  width: 80vw;
 }
 
 /* end help text */

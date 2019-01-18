@@ -118,10 +118,12 @@ shinyUI(fluidPage(
                   ,span(id='WIP_name',icon('question-circle'))
                   ,hr()
                   # description
-                  ,textAreaInput('customTrDesc'
+                  ,div(id='customTrDescGrp'
+                       ,textAreaInput('customTrDesc'
                                  ,'Please write a brief description of what you
                                    intend for your custom column transformation
                                    to be (required)',width='80vw')
+                  )
                   ,span(id='WIP_desc',icon('question-circle'))
                   ,hr()
                   # multi-select columns
