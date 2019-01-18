@@ -6,6 +6,14 @@ library(bsplus); library(reticulate); library(readr); library(shinyjqui);
 source('templates.R');
 source('www/docs/helptext.R')
 
+dfLogger <- function(dfmeta,...){
+  do.call(rbind,lapply(dfmeta$errlog,function(yy){
+    setNames(data.frame(sapply(yy,function(xx){
+      c(xx,NA)[1];
+      },simplify=F)),c('errno','row','errcode','errmsg','incol','outcol'));
+  }));
+  };
+
 dumpOutputCols <- function(id='dumpcols',input=input,rv=rv,...){
   js <- sprintf("
   oo = {};
