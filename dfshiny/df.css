@@ -71,7 +71,7 @@ h3 {font-family: "Cardo", "Times New Roman", serif;}
 }
 .dfHelp>h2{
   margin: 0;
-  font-size: 16px;
+  font-size: 2rem;
 }
 .bigimg {
   display: block;
@@ -81,15 +81,19 @@ h3 {font-family: "Cardo", "Times New Roman", serif;}
   width: 80%;
 }
 
-#customWhichCols,#customWhichFields,.form-group {
+#customWhichCols,#customWhichFields,#customTrDescGrp,.form-group {
   display: inline-block;
+}
+#customTrDescGrp{
+  display: inline-block;
+  width: 80vw;
 }
 
 /* end help text */
 
 /* Make the labels less obnoxious */
 label {color: black; font-weight: 400; text-align: justify;}
-.tab-pane label { min-width: 80vh ;}
+.tab-pane label { min-width: 80vw ;}
 
 /* make panel headings more compact and UT-ish */
 .panel-heading {
@@ -157,17 +161,35 @@ Useful classes for later:
 .recalculating
 */
 
-.dataTable>tbody>tr>td {
-  line-height: 5px;
+.dataTable>tbody>tr>td
+,.dataTable>thead>tr>th
+{
+  line-height: 0.1rem;
   white-space: nowrap;
-  max-width: 15px;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 10rem !important;
 }
 
-/* dataTable pagination controls */
+.dataTable>thead>tr>th{font-size: 1.1rem;}
 
-li.paginate_button>a {color: #008c99;}
+.dfDyn{background-color: rgba(0, 140, 153, 0.3) !important;}
+
+td.dfDyn { 
+  font-size: 0.9rem;
+  font-stretch: ultra-condensed;
+}
+
+/* dataTable widgets */
+.dataTables_length>label>select{
+  padding: 0; 
+  height: 1.8em;
+}
+
+li.paginate_button>a {
+  color: #008c99; 
+  padding: 0 0.1em
+}
 
 li.paginate_button.active>a {
   background-color: #008c99;
@@ -175,10 +197,13 @@ li.paginate_button.active>a {
   border-color: #008c99;
 }
 
+/* more generic layout */
+
+.tab-pane>hr {margin: 10px}
 
 p,p>a,.dfHelp>p,.regulartext {
   text-align: justify;
-  font-size:  12px;
+  font-size:  1.2rem;
   font-weight: 100;
   color: black;
   font-stretch: semi-condensed;

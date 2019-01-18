@@ -18,4 +18,10 @@ do.call(library, list("queryBuilder"));
 c()
 
 # Variables needed by both ui.R and server.R ----
-hcol <- '#008c99'
+hcol <- '#008c99';
+# Do not leave as-is in a production environment! Either change it to a path
+# where you intend input files to automatically be deposited or to something
+# that will never exist on your system.
+trusted_indir <- 'www'; 
+
+c()
