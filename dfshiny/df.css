@@ -176,9 +176,16 @@ td.dfDyn {
   font-stretch: ultra-condensed;
 }
 
-/* dataTable pagination controls */
+/* dataTable widgets */
+.dataTables_length>label>select{
+  padding: 0; 
+  height: 1.8em;
+}
 
-li.paginate_button>a {color: #008c99;}
+li.paginate_button>a {
+  color: #008c99; 
+  padding: 0 0.1em
+}
 
 li.paginate_button.active>a {
   background-color: #008c99;
@@ -186,6 +193,9 @@ li.paginate_button.active>a {
   border-color: #008c99;
 }
 
+/* more generic layout */
+
+.tab-pane>hr {margin: 10px}
 
 p,p>a,.dfHelp>p,.regulartext {
   text-align: justify;
