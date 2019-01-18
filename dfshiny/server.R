@@ -1,4 +1,4 @@
-library(bsplus); library(reticulate); library(readr);
+library(bsplus); library(reticulate); library(readr); library(shinyjqui);
 
 # reminder: the interactive debugger for reticulate is repl_python 
 
@@ -176,7 +176,9 @@ shinyServer(function(input, output, session) {
     show(selector = '#maintabs>.tabbable');
     return(read_delim(paste0(py$dfmeta$sampleInput(nrows = 300)
                              ,collapse='\n'),py$dfmeta$data$dialect$delimiter));
-  },options=list(scrollY='50vh',scroller=T,scrollX=T,processing=T));
+  },options=list(scrollY='50vh',scroller=T,scrollX=T,processing=T
+                 ,columns=I(paste0('[',paste0(ifelse(py$dfmeta$inhead %in% py$dfmeta$getDynIDs(),'{className:"dfDyn"}','null'),collapse=','),']'))
+                 ));
 
   outputOptions(output,'tb_infile_prev',suspendWhenHidden=F);
   
