@@ -71,7 +71,7 @@ h3 {font-family: "Cardo", "Times New Roman", serif;}
 }
 .dfHelp>h2{
   margin: 0;
-  font-size: 16px;
+  font-size: 2rem;
 }
 .bigimg {
   display: block;
@@ -157,12 +157,26 @@ Useful classes for later:
 .recalculating
 */
 
-.dataTable>tbody>tr>td {
-  line-height: 5px;
+.dataTable>tbody>tr>td
+,.dataTable>tfoot>tr>th
+,.dataTable>thead>tr>th
+{
+  line-height: 0.1rem;
   white-space: nowrap;
-  max-width: 8px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.dataTable>tfoot>tr>th
+,.dataTable>thead>tr>th
+{
+  max-width: 10rem;
+}
+
+th.dfDyn {max-width: 4rem;}
+td.dfDyn {max-width: 11rem;
+  font-size: 0.9rem;
+  font-stretch: ultra-condensed;
 }
 
 /* dataTable pagination controls */
@@ -178,7 +192,7 @@ li.paginate_button.active>a {
 
 p,p>a,.dfHelp>p,.regulartext {
   text-align: justify;
-  font-size:  12px;
+  font-size:  1.2rem;
   font-weight: 100;
   color: black;
   font-stretch: semi-condensed;
