@@ -89,7 +89,7 @@ h3 {font-family: "Cardo", "Times New Roman", serif;}
 
 /* Make the labels less obnoxious */
 label {color: black; font-weight: 400; text-align: justify;}
-.tab-pane label { min-width: 80vh ;}
+.tab-pane label { min-width: 80vw ;}
 
 /* make panel headings more compact and UT-ish */
 .panel-heading {
@@ -160,7 +160,7 @@ Useful classes for later:
 .dataTable>tbody>tr>td {
   line-height: 5px;
   white-space: nowrap;
-  max-width: 15px;
+  max-width: 8px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
