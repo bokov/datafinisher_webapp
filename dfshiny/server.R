@@ -140,7 +140,6 @@ shinyServer(function(input, output, session) {
   # server init ----
   # load the stuff we need from datafinisher
   observe_helpers(help_dir = 'www/docs');
-  cat('\n*** starting server init ***\n');
   source_python('df_reticulate.py');
   runjs("$('#customQB').on('hidden.bs.collapse',function(){
         Shiny.onInputChange('qbtest_out',null);
@@ -158,27 +157,20 @@ shinyServer(function(input, output, session) {
   
   # obtain either a pre-existing file or uploaded by user ----
   observeEvent(input$infile,{
-    cat('\n*** checking infile ***\n');
     req(input$infile$datapath);
     rv$infile <- input$infile$datapath;
     rv$infilename <- input$infile$name;});
   
   observeEvent(session$clientData$url_search,{
-    message('\n*** checking url_search ***\n');
     if(!is.null(dfile<-parseQueryString(session$clientData$url_search)$dfile)){
       dfile <- file.path(trusted_indir,basename(dfile));
       if(file.exists(dfile)){
         rv$infile <- dfile;
         rv$infilename <- basename(dfile);}
-    }
-    message('\n*** done checking url_search ***\n');
-    });
-  
-  message('\n*** line 177 ***\n');
+      }});
   
   # create dfmeta ----
   observeEvent(rv$infile,{
-    cat('\n*** creating dfmeta ***\n');
     # put up modal alert
     shinyalert(title='Please wait.',messages$mLoading
                ,closeOnEsc = F,showConfirmButton = F);
@@ -192,30 +184,29 @@ shinyServer(function(input, output, session) {
   
   
   # read input data ----
-  # Renders a sample of the uploaded data  
-  output$tb_infile_prev <- renderDataTable({
+  observeEvent(rv$have_dfmeta,{
     req(rv$have_dfmeta);
-    # TODO: temporary, will create simpler py-side method
-    message('\n*** dat loaded ***\n');
     hide('termsofuse');
+    closeAlert();
     show(selector = '#maintabs>.tabbable');
-    # remove modal alert
-    return(read_delim(paste0(py$dfmeta$sampleInput(nrows = 300)
-                             ,collapse='\n'),py$dfmeta$data$dialect$delimiter));
-  },options=list(scrollY='50vh',scroller=T,scrollX=T,processing=T
-                 ,searching=F
-                 ,columns=I(paste0('[',paste0(
-                   ifelse(py$dfmeta$inhead %in% py$dfmeta$getDynIDs()
-                          ,'{className:"dfDyn"}','null'
-                          ),collapse=','),']'))
-                 ));
+    dat <- try(read_delim(paste0(py$dfmeta$sampleInput(nrows = 300)
+                                 ,collapse='\n')
+                          ,py$dfmeta$data$dialect$delimiter));
+    output$tb_infile_prev <- renderDataTable(
+      dat
+      ,options=list(scrollY='50vh',scroller=T,scrollX=T,processing=T,searching=F
+                    ,columns=I(paste0('[',paste0(ifelse(py$dfmeta$inhead %in%
+                                                          py$dfmeta$getDynIDs()
+                                                        ,'{className:"dfDyn"}'
+                                                        ,'null')
+                                                 ,collapse=','),']'))
+      ));
+    outputOptions(output,'tb_infile_prev',suspendWhenHidden=F);
+  });
 
-  outputOptions(output,'tb_infile_prev',suspendWhenHidden=F);
-  
   # populate the 'Transform Data' tab ----
   output$tb_transform <- renderUI({
     req(rv$have_dfmeta)
-    message('\n*** running tb_transform ***\n');
     # create startingdivs ----
     # Just the column divs, as built by buildDFCols
     # This is the slowest step
@@ -270,7 +261,6 @@ shinyServer(function(input, output, session) {
   
   # create help content ----
   lapply(names(helptext),function(ii) {
-    message('\n*** loading help buttons ***\n');
     onclick(ii,shinyalert(text = helptext[[ii]],confirmButtonCol = hcol
                           ,className = 'dfHelp'))});
 
@@ -279,7 +269,6 @@ shinyServer(function(input, output, session) {
 
   # Wait for the divIDchosen to load and then make them sortable
   observeEvent(input$choosewait,{
-    req(rv$have_dfmeta);
     print('Checking choosewait');
     if(input$choosewait!=0){
       for(ii in unlist(py$dfmeta$getColIDs(ids='divIDchosen'))){
@@ -302,14 +291,13 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
     xx = 0}; Shiny.onInputChange('choosewait',xx);");};
   });
   
-  message('\n*** line 303 ***\n');
+  
   
   # custom rule names ----
   # make sure custom rules have names that are safe, legal, 
   # and unique
   observeEvent(c(input$customTrName,rv$infile,rv$have_dfmeta),{
     req(rv$have_dfmeta);
-    message('\n*** checking customTrName ***\n');
     validNames(input$customTrName,id='customTrName');
     });
   
@@ -318,7 +306,6 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
   # will be options in the transform
   output$customWhichCols <- renderUI({
     req(rv$dfstartingdivs);
-    message('\n*** updating customWhichCols ***\n');
     if(input$choosewait==0){
       selectizeInput('customSelCols'
                      ,label='Select the main column or columns in your data for
@@ -329,8 +316,7 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
   
   # when choice of columns changes, update the permitted list of variables
   observeEvent(c(input$customSelCols,input$customTrDesc),{
-    req(rv$have_dfmeta);
-    message('\n*** updating custom widgets ***\n');
+    req(rv$have_dfmeta)
     applicable <- T; out <- filterlist;
     for(ii in input$customSelCols){
       iimeta <- py$dfmeta[ii]$colmeta
@@ -381,7 +367,6 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
 
   # re/create the querybuilder UI
   output$qbtest <- renderQueryBuilder({
-    message('\n*** rendering qbtest ***\n');
     print('rendering qbtest');
     runjs("Shiny.onInputChange('qbinit',+ new Date())");
     rv$qbtest});
@@ -402,7 +387,6 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
   observeEvent(c(input$customSelFields,input$customTrDesc
                  ,input$qbtest_validate)
                ,{
-                 message('\n*** checking if custom widgets ready ***\n');
                  ready <- !is.null(input$customSelFields) &&
                    input$customSelFields != '' &&
                    !is.null(input$customTrDesc) &&
@@ -451,7 +435,6 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
   # When the save button is pressed on Custom Transforms tab
   observeEvent(input$customSave,{
     # customSave ----
-    message('\n*** customSave pressed ***\n');
     rulename <- validNames(input$customTrName,id='customTrName');
     selector <- if(is.null(input$qbtest_out)||length(input$qbtest_out$rules)==0){
       "ALL";
@@ -473,12 +456,10 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
     rv$newdivs <- newdivs; rv$newinfo <- newinfo;
   });
   
-  message('\n*** line 476 ***\n');
+  
   
   # Populate the new divs, new info created in Custom Transforms
   observeEvent(c(rv$newdivs,rv$newinfo),{
-    req(rv$have_dfmeta);
-    message('\n*** making custom rules available ***\n');
     for(ii in names(rv$newinfo)){
       # insert the new div
       insertUI(paste0('#',py$dfmeta[ii]$divIDavailable,'>div')
@@ -495,7 +476,6 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
   # output preview! ----
   observeEvent(input$outprev,{
     req(rv$have_dfmeta);
-    message('\n*** preparing output preview ***\n');
     hide('outdownload');hide('outwrite');
     # get the output column order
     chsnames <- sapply(py$dfmeta$getColIDs(ids=c('divIDchosen','incolid'))
@@ -550,7 +530,7 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
     cat('\n***\n',names(rv$dumpcols),'\n***\n');
   });
   
-  message('\n*** line 553 ***\n');
+  
 # Testing ----
   observeEvent(input$debug,{
     browser();
