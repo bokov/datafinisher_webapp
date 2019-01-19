@@ -51,7 +51,7 @@ sortableWatcher<-function(targetid,inputid
   runjs(js);
 }
 
-addChosen <- function(incolid,availableid,userArgs=list(),input,...){
+addChosen <- function(incolid,availableid,userArgs=list(CC=NULL),input,...){
   obj <- py$dfmeta[incolid];
   # add object. If it already exists in the python backend, it 
   # will overwrite/update the existing values and return NULL 
