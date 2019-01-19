@@ -184,26 +184,26 @@ shinyServer(function(input, output, session) {
   
   
   # read input data ----
-  # Renders a sample of the uploaded data  
-  output$tb_infile_prev <- renderDataTable({
+  observeEvent(rv$have_dfmeta,{
     req(rv$have_dfmeta);
-    # TODO: temporary, will create simpler py-side method
-    message('\n*** dat loaded ***\n');
     hide('termsofuse');
+    closeAlert();
     show(selector = '#maintabs>.tabbable');
-    # remove modal alert
-    return(read_delim(paste0(py$dfmeta$sampleInput(nrows = 300)
-                             ,collapse='\n'),py$dfmeta$data$dialect$delimiter));
-  },options=list(scrollY='50vh',scroller=T,scrollX=T,processing=T
-                 ,searching=F
-                 ,columns=I(paste0('[',paste0(
-                   ifelse(py$dfmeta$inhead %in% py$dfmeta$getDynIDs()
-                          ,'{className:"dfDyn"}','null'
-                          ),collapse=','),']'))
-                 ));
+    dat <- try(read_delim(paste0(py$dfmeta$sampleInput(nrows = 300)
+                                 ,collapse='\n')
+                          ,py$dfmeta$data$dialect$delimiter));
+    output$tb_infile_prev <- renderDataTable(
+      dat
+      ,options=list(scrollY='50vh',scroller=T,scrollX=T,processing=T,searching=F
+                    ,columns=I(paste0('[',paste0(ifelse(py$dfmeta$inhead %in%
+                                                          py$dfmeta$getDynIDs()
+                                                        ,'{className:"dfDyn"}'
+                                                        ,'null')
+                                                 ,collapse=','),']'))
+      ));
+    outputOptions(output,'tb_infile_prev',suspendWhenHidden=F);
+  });
 
-  outputOptions(output,'tb_infile_prev',suspendWhenHidden=F);
-  
   # populate the 'Transform Data' tab ----
   output$tb_transform <- renderUI({
     req(rv$have_dfmeta)
