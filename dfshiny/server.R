@@ -60,8 +60,16 @@ addChosen <- function(incolid,availableid,userArgs=list(),input,...){
   
   # First, obtain the user input if it exists
   # TODO: disable the accompanying Add/Update button if selectize is empty
-  if(missing(userArgs)){
-    userArgs <- list(CC=input[[obj$rules[[availableid]]$selid]])};
+  # if(missing(userArgs)){
+  #   userArgs <- list(CC=input[[obj$rules[[availableid]]$selid]])};
+  # 
+  if(length(obj$rules[[availableid]]$args)>0 && missing(userArgs)){
+    userArgs <- input[[obj$rules[[availableid]]$selid]];
+    if(is.null(userArgs)){warning('
+User input required for this rule but not provided. Ignoring.'); 
+      return();
+      } else userArgs <- list(CC=userArgs);
+    }
   
   objinfo <- obj$prepChosen(obj$rules[[availableid]],userArgs=userArgs);
   if(!is.null(objinfo)){
@@ -512,13 +520,23 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
   #   browser();
   # });
   
+  # outputWrite ----
   observeEvent(input$outwrite,{
     foutname<-py$dfmeta$processRows(outfile = tempfile()
                                     ,returnwhat = 'filename');
-    fnicename <- paste0('DF_',gsub('\\.db$','.csv',basename(rv$infilename)));
+    if(file.size(foutname)>zip_cutoff){
+      message('\n*** large output file, zipping ***\n');
+      foutname_final <- paste0(foutname,'.zip');
+      zip(foutname_final,foutname);
+      suffix_final <- '.zip';
+    } else {foutname_final <- foutname; suffix_final <- '';}
+    fnicename <- paste0('DF_',gsub('\\.db$','.csv',basename(rv$infilename))
+                        ,suffix_final);
+    message(sprintf('\n*** %s ready for download as %s ***\n'
+                    ,foutname_final,fnicename));
     output$outdownload <- downloadHandler(filename=fnicename
                                           ,content=function(con) {
-                                            file.copy(foutname,con)});
+                                            file.copy(foutname_final,con)});
     show('outdownload');
   });
 
