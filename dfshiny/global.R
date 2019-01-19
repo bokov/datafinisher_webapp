@@ -23,5 +23,6 @@ hcol <- '#008c99';
 # where you intend input files to automatically be deposited or to something
 # that will never exist on your system.
 trusted_indir <- 'www'; 
-
+# above what file-size should DataFinisher zip a file prior to download?
+zip_cutoff <- 20*1024^2; #20mb
 c()
