@@ -525,11 +525,15 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
     foutname<-py$dfmeta$processRows(outfile = tempfile()
                                     ,returnwhat = 'filename');
     if(file.size(foutname)>zip_cutoff){
+      message('\n*** large output file, zipping ***\n');
       foutname_final <- paste0(foutname,'.zip');
+      zip(foutname_final,foutname);
       suffix_final <- '.zip';
     } else {foutname_final <- foutname; suffix_final <- '';}
     fnicename <- paste0('DF_',gsub('\\.db$','.csv',basename(rv$infilename))
                         ,suffix_final);
+    message(sprintf('\n*** %s ready for download as %s ***\n'
+                    ,foutname_final,fnicename));
     output$outdownload <- downloadHandler(filename=fnicename
                                           ,content=function(con) {
                                             file.copy(foutname_final,con)});
