@@ -1,10 +1,18 @@
-library(bsplus); library(reticulate); library(readr);
+library(bsplus); library(reticulate); library(readr); library(shinyjqui);
 
 # reminder: the interactive debugger for reticulate is repl_python 
 
 # load various useful stuff
 source('templates.R');
 source('www/docs/helptext.R')
+
+dfLogger <- function(dfmeta,...){
+  do.call(rbind,lapply(dfmeta$errlog,function(yy){
+    setNames(data.frame(sapply(yy,function(xx){
+      c(xx,NA)[1];
+      },simplify=F)),c('errno','row','errcode','errmsg','incol','outcol'));
+  }));
+  };
 
 dumpOutputCols <- function(id='dumpcols',input=input,rv=rv,...){
   js <- sprintf("
@@ -147,39 +155,55 @@ shinyServer(function(input, output, session) {
     #            , placeholder = 'Drag items here...')
     # );
   
-  # create dfmeta ----
+  # obtain either a pre-existing file or uploaded by user ----
   observeEvent(input$infile,{
     req(input$infile$datapath);
-    # py_run_string(sprintf("testfile='%s'",input$infile$datapath));
-    # py_run_string('from df_fn import handleDelimFile');
-    # repl_python();
-    # browser();
+    rv$infile <- input$infile$datapath;
+    rv$infilename <- input$infile$name;});
+  
+  observeEvent(session$clientData$url_search,{
+    if(!is.null(dfile<-parseQueryString(session$clientData$url_search)$dfile)){
+      dfile <- file.path(trusted_indir,basename(dfile));
+      if(file.exists(dfile)){
+        rv$infile <- dfile;
+        rv$infilename <- basename(dfile);}
+      }});
+  
+  # create dfmeta ----
+  observeEvent(rv$infile,{
+    # put up modal alert
+    shinyalert(title='Please wait.',messages$mLoading
+               ,closeOnEsc = F,showConfirmButton = F);
     py_run_string(sprintf("dfmeta=DFMeta(fref='%s',suggestions=autosuggestor)"
-                          ,input$infile$datapath));
+                          ,rv$infile));
     # Indicator for the rest of the webapp that the core object is ready
     rv$have_dfmeta <- Sys.time();
-    hide('termsofuse');
     message('\n*** dfmeta created ***\n');
+    closeAlert();
   });
   
   
   # read input data ----
-  # Renders a sample of the uploaded data  
-  output$tb_infile_prev <- renderDataTable({
+  observeEvent(rv$have_dfmeta,{
     req(rv$have_dfmeta);
-    # TODO: temporary, will create simpler py-side method
-    #py_run_string('dfmeta.fhandle.seek(0)');
-    #dat<-read_delim(py_eval('dfmeta.fhandle.read(1024000)')
-    #                ,py$dfmeta$data$dialect$delimiter,n_max=500);
-    # return a sample of the input for the 'Input Data' tab
-    message('\n*** dat loaded ***\n');
+    hide('termsofuse');
+    closeAlert();
     show(selector = '#maintabs>.tabbable');
-    return(read_delim(paste0(py$dfmeta$sampleInput(nrows = 300)
-                             ,collapse='\n'),py$dfmeta$data$dialect$delimiter));
-  },options=list(scrollY='50vh',scroller=T,scrollX=T,processing=T));
+    dat <- try(read_delim(paste0(py$dfmeta$sampleInput(nrows = 300)
+                                 ,collapse='\n')
+                          ,py$dfmeta$data$dialect$delimiter));
+    output$tb_infile_prev <- renderDataTable(
+      dat
+      ,options=list(scrollY='50vh',scroller=T,scrollX=T,processing=T,searching=F
+                    ,columns=I(paste0('[',paste0(ifelse(py$dfmeta$inhead %in%
+                                                          py$dfmeta$getDynIDs()
+                                                        ,'{className:"dfDyn"}'
+                                                        ,'null')
+                                                 ,collapse=','),']'))
+      ));
+    outputOptions(output,'tb_infile_prev',suspendWhenHidden=F);
+  });
 
-  outputOptions(output,'tb_infile_prev',suspendWhenHidden=F);
-  
   # populate the 'Transform Data' tab ----
   output$tb_transform <- renderUI({
     req(rv$have_dfmeta)
@@ -272,7 +296,7 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
   # custom rule names ----
   # make sure custom rules have names that are safe, legal, 
   # and unique
-  observeEvent(c(input$customTrName,input$infile,rv$have_dfmeta),{
+  observeEvent(c(input$customTrName,rv$infile,rv$have_dfmeta),{
     req(rv$have_dfmeta);
     validNames(input$customTrName,id='customTrName');
     });
@@ -470,6 +494,11 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
                                # TODO: wtf is the second row broken?
                                ,delim=py$dfmeta$data$dialect$delimiter)[-2,]
       ,options=list(scrollY='50vh',scroller=T,scrollX=T,processing=T
+                    ,searching=F
+                    ,columns=I(paste0('[',paste0(
+                      ifelse(py$dfmeta$getHeaders() %in% py$dfmeta$getDynIDs()
+                             ,'{className:"dfDyn"}','null'
+                      ),collapse=','),']'))
                     ,initComplete=I("
       function(settings, json) {
         Shiny.onInputChange('tb_outfile_prev_state','loaded');
@@ -486,7 +515,7 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
   observeEvent(input$outwrite,{
     foutname<-py$dfmeta$processRows(outfile = tempfile()
                                     ,returnwhat = 'filename');
-    fnicename <- paste0('DF_',gsub('\\.db$','.csv',input$infile$name));
+    fnicename <- paste0('DF_',gsub('\\.db$','.csv',basename(rv$infilename)));
     output$outdownload <- downloadHandler(filename=fnicename
                                           ,content=function(con) {
                                             file.copy(foutname,con)});
