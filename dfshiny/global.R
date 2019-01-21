@@ -15,14 +15,14 @@ if(shinyapps){
 # Libraries needed by both ui.R and server.R ----
 library(shiny);library(dplyr);
 do.call(library, list("queryBuilder"));
-c()
 
 # Variables needed by both ui.R and server.R ----
 hcol <- '#008c99';
-# Do not leave as-is in a production environment! Either change it to a path
-# where you intend input files to automatically be deposited or to something
-# that will never exist on your system.
-trusted_indir <- 'www'; 
+# Set the below to a path that Shiny has access to but the web user does NOT
+# i.e. do not set it to 'www' or anything inside it
+trusted_files <- 'trusted_files'; 
 # above what file-size should DataFinisher zip a file prior to download?
 zip_cutoff <- 20*1024^2; #20mb
+# help text
+source('www/docs/helptext.R');
 c()
