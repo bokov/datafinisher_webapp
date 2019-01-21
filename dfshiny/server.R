@@ -6,6 +6,14 @@ library(bsplus); library(reticulate); library(readr); library(shinyjqui);
 source('templates.R');
 source('www/docs/helptext.R')
 
+dfLogger <- function(dfmeta,...){
+  do.call(rbind,lapply(dfmeta$errlog,function(yy){
+    setNames(data.frame(sapply(yy,function(xx){
+      c(xx,NA)[1];
+      },simplify=F)),c('errno','row','errcode','errmsg','incol','outcol'));
+  }));
+  };
+
 dumpOutputCols <- function(id='dumpcols',input=input,rv=rv,...){
   js <- sprintf("
   oo = {};
@@ -43,7 +51,7 @@ sortableWatcher<-function(targetid,inputid
   runjs(js);
 }
 
-addChosen <- function(incolid,availableid,userArgs=list(),input,...){
+addChosen <- function(incolid,availableid,userArgs=list(CC=NULL),input,...){
   obj <- py$dfmeta[incolid];
   # add object. If it already exists in the python backend, it 
   # will overwrite/update the existing values and return NULL 
@@ -52,8 +60,16 @@ addChosen <- function(incolid,availableid,userArgs=list(),input,...){
   
   # First, obtain the user input if it exists
   # TODO: disable the accompanying Add/Update button if selectize is empty
-  if(missing(userArgs)){
-    userArgs <- list(CC=input[[obj$rules[[availableid]]$selid]])};
+  # if(missing(userArgs)){
+  #   userArgs <- list(CC=input[[obj$rules[[availableid]]$selid]])};
+  # 
+  if(length(obj$rules[[availableid]]$args)>0 && missing(userArgs)){
+    userArgs <- input[[obj$rules[[availableid]]$selid]];
+    if(is.null(userArgs)){warning('
+User input required for this rule but not provided. Ignoring.'); 
+      return();
+      } else userArgs <- list(CC=userArgs);
+    }
   
   objinfo <- obj$prepChosen(obj$rules[[availableid]],userArgs=userArgs);
   if(!is.null(objinfo)){
@@ -176,26 +192,26 @@ shinyServer(function(input, output, session) {
   
   
   # read input data ----
-  # Renders a sample of the uploaded data  
-  output$tb_infile_prev <- renderDataTable({
+  observeEvent(rv$have_dfmeta,{
     req(rv$have_dfmeta);
-    # TODO: temporary, will create simpler py-side method
-    message('\n*** dat loaded ***\n');
     hide('termsofuse');
+    closeAlert();
     show(selector = '#maintabs>.tabbable');
-    # remove modal alert
-    return(read_delim(paste0(py$dfmeta$sampleInput(nrows = 300)
-                             ,collapse='\n'),py$dfmeta$data$dialect$delimiter));
-  },options=list(scrollY='50vh',scroller=T,scrollX=T,processing=T
-                 ,searching=F
-                 ,columns=I(paste0('[',paste0(
-                   ifelse(py$dfmeta$inhead %in% py$dfmeta$getDynIDs()
-                          ,'{className:"dfDyn"}','null'
-                          ),collapse=','),']'))
-                 ));
+    dat <- try(read_delim(paste0(py$dfmeta$sampleInput(nrows = 300)
+                                 ,collapse='\n')
+                          ,py$dfmeta$data$dialect$delimiter));
+    output$tb_infile_prev <- renderDataTable(
+      dat
+      ,options=list(scrollY='50vh',scroller=T,scrollX=T,processing=T,searching=F
+                    ,columns=I(paste0('[',paste0(ifelse(py$dfmeta$inhead %in%
+                                                          py$dfmeta$getDynIDs()
+                                                        ,'{className:"dfDyn"}'
+                                                        ,'null')
+                                                 ,collapse=','),']'))
+      ));
+    outputOptions(output,'tb_infile_prev',suspendWhenHidden=F);
+  });
 
-  outputOptions(output,'tb_infile_prev',suspendWhenHidden=F);
-  
   # populate the 'Transform Data' tab ----
   output$tb_transform <- renderUI({
     req(rv$have_dfmeta)
@@ -504,13 +520,23 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
   #   browser();
   # });
   
+  # outputWrite ----
   observeEvent(input$outwrite,{
     foutname<-py$dfmeta$processRows(outfile = tempfile()
                                     ,returnwhat = 'filename');
-    fnicename <- paste0('DF_',gsub('\\.db$','.csv',basename(rv$infilename)));
+    if(file.size(foutname)>zip_cutoff){
+      message('\n*** large output file, zipping ***\n');
+      foutname_final <- paste0(foutname,'.zip');
+      zip(foutname_final,foutname);
+      suffix_final <- '.zip';
+    } else {foutname_final <- foutname; suffix_final <- '';}
+    fnicename <- paste0('DF_',gsub('\\.db$','.csv',basename(rv$infilename))
+                        ,suffix_final);
+    message(sprintf('\n*** %s ready for download as %s ***\n'
+                    ,foutname_final,fnicename));
     output$outdownload <- downloadHandler(filename=fnicename
                                           ,content=function(con) {
-                                            file.copy(foutname,con)});
+                                            file.copy(foutname_final,con)});
     show('outdownload');
   });
 
