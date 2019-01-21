@@ -11,7 +11,9 @@ in response to the third question in the current tab. You will need to go into
 each of those entries in the `Transform Columns` tab and click `Add` in order
 to make each of those transforms active.
 
+
 Then this tab will be cleared to make way for any additional transforms you
 might with to create. 
+
 
 If you click `Cancel` this tab will be cleared without saving any changes.

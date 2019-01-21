@@ -1,5 +1,4 @@
-library(shinyjs); #library(shinyhelper); 
-library(shinyalert);
+library(shinyjs); library(shinyalert);
 
 options(shiny.maxRequestSize=50*1024^2);
 

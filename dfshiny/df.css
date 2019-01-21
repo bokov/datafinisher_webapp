@@ -1,5 +1,5 @@
 /* site-wide UT-ish branding */
-body,.dfHelp {
+body,.dfHelp,.dfHelp code {
   font-family: "Open Sans",Trebuchet,sans-serif;
 }
 .panel-primary,.panel-collapse>.panel-body{
@@ -52,19 +52,6 @@ h3 {font-family: "Cardo", "Times New Roman", serif;}
 /* end page header */
 
 /* help text */
-/*
-.shinyhelper-container {
-  position: relative;
-  right: 20px;
-  display: inline-block;
-}
-#infile_ui .shinyhelper-container {
-  position: relative;
-  display: inline;
-  right: 20px;
-  top: -20px;
-}
-*/
 
 .dfHelp{
   padding: 0 15px 5px 15px;
@@ -72,6 +59,16 @@ h3 {font-family: "Cardo", "Times New Roman", serif;}
 .dfHelp>h2{
   margin: 0;
   font-size: 2rem;
+}
+.dfHelp code{
+  color:black; 
+  font-weight: 600;
+  display: inline-block;
+  border: 1px solid lightgray;
+  border-radius: 5px;
+  line-height: 9px;
+  padding: 2px;
+  margin: 1px;
 }
 .bigimg {
   display: block;
