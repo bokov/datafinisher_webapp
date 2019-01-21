@@ -78,7 +78,7 @@ h3 {font-family: "Cardo", "Times New Roman", serif;}
   margin-left: auto;
   margin-top: 15px;
   margin-right: auto;
-  width: 80%;
+  width: 500px;
 }
 
 #customWhichCols,#customWhichFields,#customTrDescGrp,.form-group {
@@ -88,8 +88,14 @@ h3 {font-family: "Cardo", "Times New Roman", serif;}
   display: inline-block;
   width: 80vw;
 }
-
 /* end help text */
+
+/* disclaimer button */
+.dfDisclaimer>.sa-button-container,.dfDisclaimer>.sa-button-container>button.confirm{
+  width:20vw; 
+  margin: auto;
+} 
+
 
 /* Make the labels less obnoxious */
 label {color: black; font-weight: 400; text-align: justify;}
@@ -201,7 +207,7 @@ li.paginate_button.active>a {
 
 .tab-pane>hr {margin: 10px}
 
-p,p>a,.dfHelp>p,.regulartext {
+p,p>a,.dfHelp p,.regulartext,.dfDisclaimer {
   text-align: justify;
   font-size:  1.2rem;
   font-weight: 100;
