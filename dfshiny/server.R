@@ -4,7 +4,6 @@ library(bsplus); library(reticulate); library(readr); library(shinyjqui);
 
 # load various useful stuff
 source('templates.R');
-source('www/docs/helptext.R')
 
 dfLogger <- function(dfmeta,...){
   do.call(rbind,lapply(dfmeta$errlog,function(yy){
@@ -102,7 +101,7 @@ withHtmlTemplate <- function(env,template,...){
 
 # create the starting UI elements for an incol 
 # (calls buildRule for individual available rules)
-buildDFCols <- function(incolid,rulenames=T){
+buildDFCols <- function(incolid,rulenames=T,helptext){
   # apparently py magically just shows up in scope without being passed
   obj <- py$dfmeta[incolid]$getDict();
   if(missing(rulenames)) myrules <- obj$rules else {
@@ -113,11 +112,24 @@ buildDFCols <- function(incolid,rulenames=T){
   out0 <- lapply(myrules,buildRule,unique_codes=obj$unique_codes);
   out1 <- withHtmlTemplate(obj,templates$multidivavailable,innerDivs=out0);
   out2 <- if(obj$as_is_col) span() else{
-    withHtmlTemplate(obj,templates$incolui,divavailable=out1)};
+    # the separate available and chosen help IDs for this column
+    hAv <- paste0('hAv',obj$incolid); hCh <- paste0('hCh',obj$incolid);
+    withHtmlTemplate(obj,templates$incolui,divavailable=out1
+                     ,helpAv=span(id=hAv,icon('question-circle'))
+                     ,helpCh=span(id=hCh,icon('question-circle'))
+    )};
+  #if(!obj$as_is_col) browser();
   out3 <- withHtmlTemplate(obj,templates$divfull,incolui=out2);
   if(!obj$as_is_col){
+    onclick(hAv,shinyalert(text = helptext$hDivAvailable
+                           ,confirmButtonCol = hcol,html = T
+                           ,className = 'dfHelp'));
+    onclick(hCh,shinyalert(text = helptext$hDivChosen
+                           ,confirmButtonCol = hcol,html = T
+                           ,className = 'dfHelp'));
     jqui_sortable(ui=paste0('#',obj$divIDchosen)
-                  ,options=list(axis='y',items='div'))};
+                  ,options=list(axis='y',items='div'));
+  };
   out3;
 }
 
@@ -125,14 +137,20 @@ buildDFCols <- function(incolid,rulenames=T){
 buildRule <- function(rule,unique_codes,rulename,incolid
                       ,selclass='transform-argsel'
                       ,sellab='For the following codes:'
+                      ,selhelpid=''
+                      ,selhelp=helptext$hSelCodes
                       ,template=templates$divavailable){
   if(missing(rule)) rule <- py$dfmeta[incolid]$rules[rulename];
   if(missing(unique_codes)) {
     unique_codes <- py$dfmeta[rule$parent_name]$unique_codes;}
   rsel <- if(rule$split_by_code && length(unique_codes)>1){
+    if(missing(selhelpid)) selhelpid <- paste0('h',rule$selid);
+    sellab <- tagList(span(id=selhelpid,icon('question-circle')),sellab);
+    onclick(selhelpid,shinyalert(text = selhelp,confirmButtonCol = hcol
+                                 ,html = T,className = 'dfHelp'));
     div(class=selclass,selectizeInput(rule$selid,multiple=T,label=sellab
                                       ,choices=unique_codes))} else span();
-  withHtmlTemplate(rule,template,xxsel=rsel)
+  out<-withHtmlTemplate(rule,template,xxsel=rsel);
 }
 
 #' validNames: make sure a name is unique and has legal characters
@@ -147,14 +165,13 @@ validNames <- function(newname #,existingnames=c()
 shinyServer(function(input, output, session) {
   # server init ----
   # load the stuff we need from datafinisher
-  observe_helpers(help_dir = 'www/docs');
+  #observe_helpers(help_dir = 'www/docs');
   source_python('df_reticulate.py');
   runjs("$('#customQB').on('hidden.bs.collapse',function(){
         Shiny.onInputChange('qbtest_out',null);
         Shiny.onInputChange('qbtest_validate',true);
       })");
-  
-  rv <- reactiveValues();
+  rv <- reactiveValues(disclaimerAgreed=F);
     # uitest=div(
     #  orderInput('source', 'Source'
     #             ,items = factor(sample(month.abb,15,rep=T))
@@ -162,23 +179,31 @@ shinyServer(function(input, output, session) {
     # ,orderInput('dest', 'Dest', items = NULL
     #            , placeholder = 'Drag items here...')
     # );
+  # user agreement
+  shinyalert('User Agreement',text=includeMarkdown('www/docs/disclaimer.md')
+             ,html=T,confirmButtonText = 'I agree',confirmButtonCol = hcol
+             ,className = 'dfDisclaimer',closeOnEsc = F
+             ,animation = 'slide-from-top'
+             ,callbackR = function() rv[['disclaimerAgreed']] <- T);
+  
   
   # obtain either a pre-existing file or uploaded by user ----
-  observeEvent(input$infile,{
-    req(input$infile$datapath);
+  observeEvent(c(input$infile,rv$disclaimerAgreed),{
+    req(input$infile$datapath,rv$disclaimerAgreed);
     rv$infile <- input$infile$datapath;
     rv$infilename <- input$infile$name;});
   
   observeEvent(session$clientData$url_search,{
     if(!is.null(dfile<-parseQueryString(session$clientData$url_search)$dfile)){
-      dfile <- file.path(trusted_indir,basename(dfile));
+      dfile <- file.path(trusted_files,basename(dfile));
       if(file.exists(dfile)){
         rv$infile <- dfile;
         rv$infilename <- basename(dfile);}
       }});
   
   # create dfmeta ----
-  observeEvent(rv$infile,{
+  observeEvent(c(rv$infile,rv$disclaimerAgreed),{
+    req(rv$infile,rv$disclaimerAgreed);
     # put up modal alert
     shinyalert(title='Please wait.',messages$mLoading
                ,closeOnEsc = F,showConfirmButton = F);
@@ -218,7 +243,8 @@ shinyServer(function(input, output, session) {
     # create startingdivs ----
     # Just the column divs, as built by buildDFCols
     # This is the slowest step
-    rv$dfstartingdivs <- sapply(py$dfmeta$inhead,buildDFCols,simplify=F);
+    rv$dfstartingdivs <- sapply(py$dfmeta$inhead,buildDFCols,helptext=helptext
+                                ,simplify=F);
     message('\n*** dfstartingdivs created ***\n');
 
     # This is the part that detects clicks on the Add/Update buttons
@@ -269,7 +295,7 @@ shinyServer(function(input, output, session) {
   
   # create help content ----
   lapply(names(helptext),function(ii) {
-    onclick(ii,shinyalert(text = helptext[[ii]],confirmButtonCol = hcol
+    onclick(ii,shinyalert(text = helptext[[ii]],confirmButtonCol = hcol,html = T
                           ,className = 'dfHelp'))});
 
     # set output options so stuff starts rendering before tab active
@@ -364,7 +390,6 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
                                                   ,choices=validchoices);
       output$customWhichFields <- renderUI(rv$customWhichFieldsReady);
       show('customWhichFieldsGrp');
-      show('customQBhead');
     } else {
       hide('customWhichFieldsGrp');
       runjs("$('#customQB').collapse('hide')");
@@ -424,6 +449,7 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
                                              to aggregate them?'
                                      ,choices=choices);
                    show('customAggregateGrp');
+                   show('customQBHead');
                    if(is.null(input$qbtest_validate)||input$qbtest_validate) {
                      enable('customSave')
                      } else disable('customSave');
