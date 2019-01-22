@@ -1,4 +1,5 @@
 shinyapps <- file.exists('queryBuilder_0.0.2.9000.tar.gz');
+if(file.exists('insuredeploy.R')) source('insuredeploy.R');
 
 # Let me just say that Winston Chang is a genius
 # https://gist.github.com/wch/c3653fb39a00c63b33cf
