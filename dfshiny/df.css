@@ -70,6 +70,9 @@ h3 {font-family: "Cardo", "Times New Roman", serif;}
   padding: 2px;
   margin: 1px;
 }
+
+.dfHelp p{padding-top: 10px;}
+
 .bigimg {
   display: block;
   margin-left: auto;
@@ -204,7 +207,7 @@ li.paginate_button.active>a {
 
 .tab-pane>hr {margin: 10px}
 
-p,p>a,.dfHelp p,.regulartext,.dfDisclaimer {
+p,p>a,.dfHelp p,.regulartext,.dfDisclaimer,.regulartext li {
   text-align: justify;
   font-size:  1.2rem;
   font-weight: 100;

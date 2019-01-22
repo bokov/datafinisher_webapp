@@ -1,5 +1,6 @@
 helptext <- list(
-  hInfile="
+  disclaimer=includeMarkdown('www/docs/disclaimer.md')
+  ,hInfile="
 Please upload a .csv file that has been created by this version of DataFinisher or a .db SQLite file created by DataBuilder. Not just any .csv or .db file will work: they have to have been created by DataFinisher or DataBuilder. Excel files are not currently supported."
   ,hMainInfo=tagList(includeMarkdown('www/docs/instructions.md')
                      ,includeMarkdown('www/docs/about.md'))
