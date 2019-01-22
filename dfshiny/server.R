@@ -273,7 +273,8 @@ shinyServer(function(input, output, session) {
                  ,div(class='panel-heading',ii)
                  ,div(class='panel-body',rv$dfstartingdivs[[ii]])));
         } else {
-          infodivs<-bs_append(infodivs,ii,rv$dfstartingdivs[[ii]])
+          infodivs<-bs_append(infodivs,py$dfmeta[ii]$getColIDs('incoldesc')[[1]]
+                              ,rv$dfstartingdivs[[ii]])
         }
       });
     }
@@ -322,7 +323,10 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
       $('.activecolidtxt').text(activecolid);
       Shiny.onInputChange('activecolid',activecolid);
     });
-    xx = 0}; Shiny.onInputChange('choosewait',xx);");};
+    xx = 0};
+    // Below prevents clicking on a selectize box from triggering the help popup
+    $('.selectize-control').click(function(ee){ee.stopPropagation();});
+    Shiny.onInputChange('choosewait',xx);");};
   });
   
   
