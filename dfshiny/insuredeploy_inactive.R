@@ -11,6 +11,7 @@ if (!file.exists(.projlib)) dir.create(.projlib);
 if(any(grepl(.projlib,.libPaths()))){
   .libPaths( c(normalizePath(.projlib), .libPaths()) );
 }
+
 for(ii in .projpkg){if(!require(ii)){
   .projlog <- c(.projlog,sprintf('missing: %s',ii));
   iiout<-try(install.packages(ii,lib='R-lib',repos = .projrep));
@@ -28,8 +29,9 @@ if(require(devtools)){
       .projlog <- c(.projlog,sprintf('error: %s'
                                      ,attr(qbout,'condition')$message))
     }
-  } else .projlog <- c(.projlog,'not devtools so no queryBuilder');
-
-
-print(.projpkg);
+  } else .projlog <- c(.projlog
+                       ,'not devtools so no queryBuilder');
+write(ls(),file='projlog.txt');
+write('\n\n---\n\n',file='projlog.txt',append = T)
+write(.projlog,file='projlog.txt',append=T);
 c()
