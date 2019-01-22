@@ -180,7 +180,7 @@ shinyServer(function(input, output, session) {
     #            , placeholder = 'Drag items here...')
     # );
   # user agreement
-  shinyalert('User Agreement',text=includeMarkdown('www/docs/disclaimer.md')
+  shinyalert('User Agreement',text=helptext$disclaimer
              ,html=T,confirmButtonText = 'I agree',confirmButtonCol = hcol
              ,className = 'dfDisclaimer',closeOnEsc = F
              ,animation = 'slide-from-top'

@@ -31,7 +31,7 @@ shinyUI(fluidPage(
   # ,div(id='debugval','Waiting for debug value...')
   ,mainPanel(width=12,id='maintabs'
     # tabsetPanel ----
-      ,div(id='termsofuse', helptext$hMainInfo,class='.regulartext')
+      ,div(id='termsofuse', helptext$hMainInfo,class='regulartext')
       ,hidden(tabsetPanel(
         tabPanel(span(id='tInputData','Input',br(),'Data'
                       ,span(id='hInputData',icon('question-circle')))
@@ -122,6 +122,8 @@ shinyUI(fluidPage(
                   ,hr()
                   ,dataTableOutput('tb_outfile_prev'))
         ,tabPanel(span('Information',br(),HTML('&nbsp;')),id='tInfo'
+                  ,h4('User Agreement')
+                  ,helptext$disclaimer
                   ,helptext$hMainInfo)
         )
     # end tabsetpanel ----

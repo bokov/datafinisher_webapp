@@ -1,12 +1,13 @@
 helptext <- list(
-  hInfile="
+  disclaimer=includeMarkdown('www/docs/disclaimer.md')
+  ,hInfile="
 Please upload a .csv file that has been created by this version of DataFinisher or a .db SQLite file created by DataBuilder. Not just any .csv or .db file will work: they have to have been created by DataFinisher or DataBuilder. Excel files are not currently supported."
   ,hMainInfo=tagList(includeMarkdown('www/docs/instructions.md')
                      ,includeMarkdown('www/docs/about.md'))
   ,hInputData="
 This is a sample of the the top few rows from the file you uploaded."
   ,hTransform="
-Here you can change which transformations are applied to which main columns. One main column can be used to created output columns. If you don't choose anything for a column, it will not be deleted. Rather, default transformations will be applied. The main columns always keep getting passed on with all their metadata so if necessary you can re-upload a file produced by DataFinisher and make a different set of choices."
+Here you can change which transformations are applied to which main columns. One main column can be used to create multiple output columns. If you don't choose anything for a column, it will not be deleted. Rather, default transformations will be applied. The main columns always keep getting passed on with all their metadata so you can re-upload a file produced by DataFinisher and make a different set of choices without having to re-pull the data from i2b2."
   ,hDivChosen=includeMarkdown('www/docs/hDivChosen.md')
   ,hDivAvailable=includeMarkdown('www/docs/hDivAvailable.md')
   ,hSelCodes=includeMarkdown('www/docs/hSelCodes.md')
