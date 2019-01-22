@@ -26,8 +26,8 @@ coming back and amending how your data is represented at your convenience
 without having to submit a new i2b2 data-extraction request.*
 
 **If you do not have a file to try this on, here is some simulated data 
-in <a href='docs/demodata.csv' target='_blank'>.csv format</a> and in 
-<a href='docs/demodata.db' target='_blank'>SQLite .db format</a>** (adapted from 
+in <a href='demodata.csv' target='_blank'>.csv format</a> and in 
+<a href='demodata.db' target='_blank'>SQLite .db format</a>** (adapted from 
 http://i2b2.org/). These are demo datasets that contain no PHI, for you to 
 download and then upload back up here so you can try out this app. 
 
