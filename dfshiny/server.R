@@ -156,7 +156,8 @@ buildRule <- function(rule,unique_codes,rulename,incolid
 #' validNames: make sure a name is unique and has legal characters
 validNames <- function(newname #,existingnames=c()
                        ,id,session=getDefaultReactiveDomain()){
-  outname <- py$dfmeta$makeNameUnq(newname,'rulename',maxlen=int(12))
+  outname <- py$dfmeta$makeNameUnq(newname,'rulename'
+                                   ,maxlen=as.integer(12))
   if(!is.null(id)) updateTextInput(session,id,value=outname);
   return(outname);
 }    
@@ -184,7 +185,9 @@ shinyServer(function(input, output, session) {
              ,html=T,confirmButtonText = 'I agree',confirmButtonCol = hcol
              ,className = 'dfDisclaimer',closeOnEsc = F
              ,animation = 'slide-from-top'
-             ,callbackR = function() rv[['disclaimerAgreed']] <- T);
+             ,callbackR = function() {
+               rv[['disclaimerAgreed']] <- T;
+               show('infile')});
   
   
   # obtain either a pre-existing file or uploaded by user ----
