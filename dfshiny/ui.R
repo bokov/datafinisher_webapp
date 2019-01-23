@@ -12,7 +12,7 @@ shinyUI(fluidPage(
      column(1,img(src='sitelogo_color.png',width='45px'))
     ,column(2,h3("Datafinisher WebApp",id='apptitle'))
     ,column(4
-            ,fileInput("infile", div("Choose a CSV file to upload"
+            ,hidden(fileInput("infile", div("Choose a CSV file to upload"
                                      )
                         ,multiple = FALSE,width = '400px'
                         ,accept = c("text/csv","text/tsv",".csv",".tsv"
@@ -20,7 +20,7 @@ shinyUI(fluidPage(
                                     ,"application/x-sqlite3"
                                     ,"text/tab-separated-values,text/plain"
                                     ,"text/comma-separated-values,text/plain")
-                       )
+                       ))
             ,id='infile_ui')
     ,column(1,id='helpDebug'
             ,span(id='hInfile',icon('question-circle'))
