@@ -13,7 +13,7 @@ if(shinyapps){
 }
 
 # Libraries needed by both ui.R and server.R ----
-library(shiny);library(dplyr);
+library(dplyr);
 do.call(library, list("queryBuilder"));
 
 # Variables needed by both ui.R and server.R ----
