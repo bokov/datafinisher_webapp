@@ -16,8 +16,8 @@ source('projlib.R');
 
 # Libraries needed by both ui.R and server.R ----
 #library(shiny);
-library(dplyr);
-do.call(library, list("queryBuilder"));
+#library(dplyr);
+#do.call(library, list("queryBuilder"));
 
 # Variables needed by both ui.R and server.R ----
 hcol <- '#008c99';
