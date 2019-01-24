@@ -6,7 +6,7 @@ sys.path+=[os.getcwd()+'/datafinisher']
 
 from df_fn import DFMeta,autosuggestor #,DFCol
 #from df_fn import shortenwords,dropletters,makeTailUnq,ob2tag
-from rules import rules2
+from rules import rules
 # import pandas as pd (for DataFrame, not yet used)
 
 # to allow ridiculously large cells
