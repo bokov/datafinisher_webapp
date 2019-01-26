@@ -13,6 +13,7 @@ if(shinyapps){
 }
 
 # Libraries needed by both ui.R and server.R ----
+library(compiler); enableJIT(3);
 library(dplyr);
 do.call(library, list("queryBuilder"));
 
