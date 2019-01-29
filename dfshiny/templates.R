@@ -2,18 +2,26 @@ templates <- list(
 
  divavailable = '<div class="available-transform panel panel-body panel-default">
 {{longname}}
-<button class="btn action-button btn-success" id={{addbid}} type="button">Add/Update</button>{{xxsel}}<br/>
-  <span class="annotation">{{ruledesc}}</span>
-    </div>'
+<button class="btn action-button btn-success" id={{addbid}} type="button">
+Add/Update
+</button>
+{{xxsel}}<br/>
+<span class="annotation">{{ruledesc}}</span>
+ </div>'
  
 ,multidivavailable = '<div id={{divIDavailable}}>{{innerDivs}}</div>'
 
-,incolui='<div id={{divIDchosen}}><hr/><strong>Chosen...</strong></div><hr/>
-<div id={{divIDavailable}}><strong>Available...</strong>{{divavailable}}</div>
+,incolui='<div id={{divIDchosen}}>
+<hr/>
+{{helpCh}}<strong>Chosen...</strong></div>
+<hr/>
+<div id={{divIDavailable}}>
+{{helpAv}}<strong>Available...</strong>
+{{divavailable}}</div>
 '
 
-,divfull ='<div id={{incolid}}><strong>{{incolid}}:</strong><!--br/-->
-  <span class="annotation">{{incoldesc}}</span>
+,divfull ='<div id={{incolid}}>
+<strong>{{incoldesc}}</strong><span class="annotation">[{{incolid}}]</span>
   {{incolui}}
 </div>
 '
