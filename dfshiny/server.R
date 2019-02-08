@@ -52,15 +52,14 @@ shinyServer(function(input, output, session) {
           nofilemsg <- as.character(tagList('
           If you double-checked the link and it is correct then it could mean 
           your results are still being processed.',br()
-                                            ,a(href=paste0('/'
-                                                           ,session$clientData$url_search)
-                                               ,target='_TOP'
-                                               ,class='btn btn-info'
-                                               ,'See if the file is ready yet.')
-                                            ,a(href='/',target='_TOP'
-                                               ,class='btn btn-info'
-                                               ,'Go to main DataFinisher page')
-                                            ));
+          ,a(href=paste0(session$clientData$url_pathname
+                         ,session$clientData$url_search)
+             ,target='_TOP',class='btn btn-info'
+             ,'See if the file is ready yet.')
+          ,a(href=session$clientData$url_pathname
+             ,target='_TOP',class='btn btn-info'
+             ,'Go to main DataFinisher page')
+          ));
           shinyalert('File not (yet) availble.'
                      ,text=nofilemsg,closeOnEsc = FALSE
                      ,closeOnClickOutside = FALSE,html=T,showConfirmButton=F
