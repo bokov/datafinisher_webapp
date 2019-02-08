@@ -10,6 +10,7 @@ source('functions.R');
 # shinyServer ----
 shinyServer(function(input, output, session) {
   # server init ----
+
   shinyalert('User Agreement',text=helptext$disclaimer
              # user agreement ----
              ,html=T,confirmButtonText = 'I agree',confirmButtonCol = hcol
@@ -46,8 +47,25 @@ shinyServer(function(input, output, session) {
       dfile <- file.path(trusted_files,basename(dfile));
       if(file.exists(dfile)){
         rv$infile <- dfile;
-        rv$infilename <- basename(dfile);}
-      }});
+        rv$infilename <- basename(dfile);} else {
+          message('*** Did not find ',dfile,' ***');
+          nofilemsg <- as.character(tagList('
+          If you double-checked the link and it is correct then it could mean 
+          your results are still being processed.',br()
+                                            ,a(href=paste0('/'
+                                                           ,session$clientData$url_search)
+                                               ,target='_TOP'
+                                               ,class='btn btn-info'
+                                               ,'See if the file is ready yet.')
+                                            ,a(href='/',target='_TOP'
+                                               ,class='btn btn-info'
+                                               ,'Go to main DataFinisher page')
+                                            ));
+          shinyalert('File not (yet) availble.'
+                     ,text=nofilemsg,closeOnEsc = FALSE
+                     ,closeOnClickOutside = FALSE,html=T,showConfirmButton=F
+                     ,animation = 'slide-from-top');
+          }}});
   
   # create dfmeta ----
   observeEvent(c(rv$infile,rv$disclaimerAgreed),{
