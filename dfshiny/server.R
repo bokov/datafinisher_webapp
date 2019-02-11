@@ -60,7 +60,7 @@ shinyServer(function(input, output, session) {
              ,target='_TOP',class='btn btn-info'
              ,'Go to main DataFinisher page')
           ));
-          shinyalert('File not (yet) availble.'
+          shinyalert('File not (yet) available.'
                      ,text=nofilemsg,closeOnEsc = FALSE
                      ,closeOnClickOutside = FALSE,html=T,showConfirmButton=F
                      ,animation = 'slide-from-top');
