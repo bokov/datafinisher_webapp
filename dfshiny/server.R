@@ -1,7 +1,7 @@
 library(bsplus); library(reticulate); library(readr); library(shinyjqui);
 
 # reminder: the interactive debugger for reticulate is repl_python 
-
+# 
 # load various useful stuff
 source('templates.R');
 source('functions.R');
@@ -386,10 +386,17 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
     # TODO: fix this so that Python catches null entries, including where all
     # are null, so that the web front end doesn't need to
     chsnames <- chsnames[!sapply(chsnames,is.null)];
-    #.dbg <- try(
-    py$dfmeta$finalizeChosen(chsnames);
-    #);
-    #if(class(.dbg)[1]=='try-error') browser();
+    .dbg <- try(
+    py$dfmeta$finalizeChosen(chsnames)
+    );
+    if(class(.dbg)[1]=='try-error'){
+      shinyalert('An error has occurred. If possible, please send a copy of the 
+                 file you were working with and the steps that were taken prior
+                 to this error and email them to bokov@uthscsa.edu with the 
+                 subject "DataFinisher Bug". Thanks, and sorry for the
+                 inconvenience.');
+      browser();
+    }
     tempname <- py$dfmeta$processRows(tempfile(),nrows=300);
     #py$dfmeta$fhandle$seek(0); py$dfmeta$nrows = 3;
     output$tb_outfile_prev <- renderDataTable(
