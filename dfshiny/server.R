@@ -1,7 +1,7 @@
 library(bsplus); library(reticulate); library(readr); library(shinyjqui);
 
 # reminder: the interactive debugger for reticulate is repl_python 
-
+# 
 # load various useful stuff
 source('templates.R');
 source('functions.R');
@@ -10,6 +10,7 @@ source('functions.R');
 # shinyServer ----
 shinyServer(function(input, output, session) {
   # server init ----
+
   shinyalert('User Agreement',text=helptext$disclaimer
              # user agreement ----
              ,html=T,confirmButtonText = 'I agree',confirmButtonCol = hcol
@@ -46,8 +47,24 @@ shinyServer(function(input, output, session) {
       dfile <- file.path(trusted_files,basename(dfile));
       if(file.exists(dfile)){
         rv$infile <- dfile;
-        rv$infilename <- basename(dfile);}
-      }});
+        rv$infilename <- basename(dfile);} else {
+          message('*** Did not find ',dfile,' ***');
+          nofilemsg <- as.character(tagList('
+          If you double-checked the link and it is correct then it could mean 
+          your results are still being processed.',br()
+          ,a(href=paste0(session$clientData$url_pathname
+                         ,session$clientData$url_search)
+             ,target='_TOP',class='btn btn-info'
+             ,'See if the file is ready yet.')
+          ,a(href=session$clientData$url_pathname
+             ,target='_TOP',class='btn btn-info'
+             ,'Go to main DataFinisher page')
+          ));
+          shinyalert('File not (yet) available.'
+                     ,text=nofilemsg,closeOnEsc = FALSE
+                     ,closeOnClickOutside = FALSE,html=T,showConfirmButton=F
+                     ,animation = 'slide-from-top');
+          }}});
   
   # create dfmeta ----
   observeEvent(c(rv$infile,rv$disclaimerAgreed),{
@@ -369,10 +386,17 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
     # TODO: fix this so that Python catches null entries, including where all
     # are null, so that the web front end doesn't need to
     chsnames <- chsnames[!sapply(chsnames,is.null)];
-    #.dbg <- try(
-    py$dfmeta$finalizeChosen(chsnames);
-    #);
-    #if(class(.dbg)[1]=='try-error') browser();
+    .dbg <- try(
+    py$dfmeta$finalizeChosen(chsnames)
+    );
+    if(class(.dbg)[1]=='try-error'){
+      shinyalert('An error has occurred. If possible, please send a copy of the 
+                 file you were working with and the steps that were taken prior
+                 to this error and email them to bokov@uthscsa.edu with the 
+                 subject "DataFinisher Bug". Thanks, and sorry for the
+                 inconvenience.');
+      browser();
+    }
     tempname <- py$dfmeta$processRows(tempfile(),nrows=300);
     #py$dfmeta$fhandle$seek(0); py$dfmeta$nrows = 3;
     output$tb_outfile_prev <- renderDataTable(
