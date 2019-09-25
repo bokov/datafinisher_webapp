@@ -1,4 +1,9 @@
 library(bsplus); library(reticulate); library(readr); library(shinyjqui);
+message('\n\nPYTHON CONFIGURATION\n\n');
+message(py_config());
+message('\n\nFORCING USE PYTHON\n\n');
+use_python(py_config()$libpython,required = TRUE)
+
 
 # reminder: the interactive debugger for reticulate is repl_python 
 # 
