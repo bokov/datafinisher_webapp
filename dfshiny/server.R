@@ -1,4 +1,5 @@
 library(bsplus); library(reticulate); library(readr); library(shinyjqui);
+library(DT);
 
 # reminder: the interactive debugger for reticulate is repl_python 
 # 
@@ -90,15 +91,22 @@ shinyServer(function(input, output, session) {
     dat <- try(read_delim(paste0(py$dfmeta$sampleInput(nrows = 300)
                                  ,collapse='\n')
                           ,py$dfmeta$data$dialect$delimiter));
-    output$tb_infile_prev <- renderDataTable(
-      dat
-      ,options=list(scrollY='50vh',scroller=T,scrollX=T,processing=T,searching=F
-                    ,columns=I(paste0('[',paste0(ifelse(py$dfmeta$inhead %in%
-                                                          py$dfmeta$getDynIDs()
-                                                        ,'{className:"dfDyn"}'
-                                                        ,'null')
-                                                 ,collapse=','),']'))
-      ));
+    # + DataTable preview of input ----
+    output$tb_infile_prev <- DT::renderDataTable(
+      DT::datatable(dat,extensions=c('Scroller')
+                    ,autoHideNavigation=T,rownames=F,fillContainer=T
+                    ,options=list(processing=T,searching=F,scroller=T
+                                  ,dom='Bfrtip' #,pageLength=12
+                                  ,scrollX=T,scrollY='50vh'
+                                  ,columns=JS(
+                                    paste0('['
+                                           ,paste0(ifelse(py$dfmeta$inhead %in%
+                                                            py$dfmeta$getDynIDs()
+                                                          ,'{className:"dfDyn"}'
+                                                          ,'null')
+                                                   ,collapse=','),']'))
+                                  )
+      ),server=F);
     outputOptions(output,'tb_infile_prev',suspendWhenHidden=F);
   });
 
@@ -399,20 +407,25 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
     }
     tempname <- py$dfmeta$processRows(tempfile(),nrows=300);
     #py$dfmeta$fhandle$seek(0); py$dfmeta$nrows = 3;
-    output$tb_outfile_prev <- renderDataTable(
-      rv$testout <- read_delim(tempname
-                               # TODO: wtf is the second row broken?
-                               ,delim=py$dfmeta$data$dialect$delimiter)[-2,]
-      ,options=list(scrollY='50vh',scroller=T,scrollX=T,processing=T
-                    ,searching=F
-                    ,columns=I(paste0('[',paste0(
-                      ifelse(py$dfmeta$getHeaders() %in% py$dfmeta$getDynIDs()
-                             ,'{className:"dfDyn"}','null'
-                      ),collapse=','),']'))
-                    ,initComplete=I("
-      function(settings, json) {
-        Shiny.onInputChange('tb_outfile_prev_state','loaded');
-      }")));
+    output$tb_outfile_prev <- DT::renderDataTable(
+    DT::datatable(read_delim(tempname
+                             ,delim=py$dfmeta$data$dialect$delimiter)[-2,]
+                  ,extensions=c('Scroller')
+                  ,autoHideNavigation=T,rownames=F,fillContainer=T
+                  ,options=list(processing=T,searching=F,scroller=T
+                                ,dom='Bfrtip' #,pageLength=12
+                                ,scrollX=T,scrollY='50vh'
+                                ,columns=JS(paste0('[',paste0(
+                                  ifelse(py$dfmeta$getHeaders() %in% 
+                                           py$dfmeta$getDynIDs()
+                                         ,'{className:"dfDyn"}','null')
+                                  ,collapse=','),']'))
+                          ## This event is for signalling that table done
+                          ## loading, see below
+                          #       ,initComplete=JS("function(settings, json) {
+                          # Shiny.onInputChange('tb_outfile_prev_state','loaded');
+                          #           }")
+                                )), server=F);
     show('outwrite');
     });
   
