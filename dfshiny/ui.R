@@ -24,7 +24,8 @@ shinyUI(fluidPage(
             ,id='infile_ui')
     ,column(1,id='helpDebug'
             ,span(id='hInfile',icon('question-circle'))
-            ,if(!shinyapps) actionButton('debug','Debug') else c()
+            ,if(!shinyapps||file.exists('.debug')){
+              actionButton('debug','Debug')} else c()
             )
   )
   # ,actionButton('btDumpcols','Column Info')
@@ -41,7 +42,7 @@ shinyUI(fluidPage(
                                    div("Reading your file, please wait..."
                                        ,id="loading_message_in"))
                  #,helper(strong(),type='inline',content=help_tinput,colour=hcol)
-                 ,dataTableOutput('tb_infile_prev'))
+                 ,DT::dataTableOutput('tb_infile_prev'))
         ,tabPanel(span(id='tTransform','Transform',br(),'Columns'
                        ,span(id='hTransform',icon('question-circle')))
                   #,helper(strong(),type='inline',content=help_ttransform,colour=hcol)
@@ -120,7 +121,7 @@ shinyUI(fluidPage(
                                        ,icon=icon('play')))
                   ,hidden(downloadButton('outdownload','Download Full Results'))
                   ,hr()
-                  ,dataTableOutput('tb_outfile_prev'))
+                  ,DT::dataTableOutput('tb_outfile_prev'))
         ,tabPanel(span('Information',br(),HTML('&nbsp;')),id='tInfo'
                   ,h4('User Agreement')
                   ,helptext$disclaimer
