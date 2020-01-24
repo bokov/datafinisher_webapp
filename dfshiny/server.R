@@ -1,3 +1,5 @@
+# uncomment below line if reticulate gets stubborn about python version
+reticulate::use_python('/usr/bin/python',required = TRUE);
 library(bsplus); library(reticulate); library(readr); library(shinyjqui);
 library(DT);
 
