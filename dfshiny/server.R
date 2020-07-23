@@ -389,7 +389,7 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
   # output preview! ----
   observeEvent(input$outprev,{
     req(rv$have_dfmeta);
-    hide('outdownload');hide('outwrite');
+    hide('outdownload');hide('outwrite');hide('dictdownload');
     # get the output column order
     chsnames <- sapply(py$dfmeta$getColIDs(ids=c('divIDchosen','incolid'))
                       ,function(xx) setNames(list(input[[xx[1]]]),xx[2]));
@@ -466,7 +466,10 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
                           # Shiny.onInputChange('tb_outfile_prev_state','loaded');
                           #           }")
                                 )), server=F);
-    show('outwrite');
+    output$dictdownload <- downloadHandler(filename=basename(dictfile)
+                                          ,content=function(con) {
+                                            file.copy(dictfile,con)});
+    show('outwrite');show('dictdownload');
     });
   
   # If it's necessary to do something after the dataTable loads, uncomment this

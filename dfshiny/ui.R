@@ -1,6 +1,6 @@
 library(shinyjs); library(shinyalert);
 
-options(shiny.maxRequestSize=50*1024^2);
+options(shiny.maxRequestSize=2100*1024^2);
 
 
 shinyUI(fluidPage(
@@ -117,6 +117,8 @@ shinyUI(fluidPage(
                   #,helper(strong(),type='inline',content=help_toutput,colour=hcol)
                   ,actionButton('outprev','Generate/Update Preview of Results'
                                 ,icon=icon('eye'))
+                  ,hidden(downloadButton('dictdownload'
+                                         ,'Download Data Dictionary'))
                   ,hidden(actionButton('outwrite','Prepare Results for Download'
                                        ,icon=icon('play')))
                   ,hidden(downloadButton('outdownload','Download Full Results'))
