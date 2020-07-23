@@ -408,6 +408,44 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
       browser();
     }
     tempname <- py$dfmeta$processRows(tempfile(),nrows=300);
+    
+    # get the metadata for all columns that have dynamic data
+    colmetas <- py$dfmeta$getColIDs(ids=c('incolid','colmeta')
+                                    ,childtype='chosen',asdicts=T);
+    colmetas <- setNames(sapply(colmetas,`[[`,'colmeta',simplify=F)
+                         ,sapply(colmetas,`[[`,'incolid'));
+    # the suffixes that got added to columns (might not work with custom)
+    rulesuffixes <- paste0('_',sapply(py$dfmeta$rules,`[[`,'rulesuffix'),'$'
+                           ,collapse='|');
+    # headers
+    outheaders <- py$dfmeta$getHeaders();
+    # fields to collect for data dictionary
+    dictfields <- sapply(colmetas,names,simplify=F) %>% unlist %>% 
+      setdiff(.,c('__builtins__','ccd_list','done','xx'));
+    # metadata dictionary
+    dict <- sapply(outheaders,function(ii){
+      if(ii %in% names(colmetas)) return(colmetas[[ii]][dictfields]) 
+      # if this is a derived or dynamic column
+      else if((jj<-gsub(rulesuffixes,'',ii)) %in% names(colmetas)){
+        iiout <- colmetas[[jj]][dictfields]}
+      # if this is a static column
+      else iiout <- c(list(static=py$dfmeta[[ii]]$colmeta),
+                      setNames(as.list(rep_along(dictfields,NA)),dictfields));
+      iiout <- lapply(iiout,function(kk) c(unlist(kk),NA)[1]) %>% 
+        data.frame(stringsAsFactors = FALSE);
+      return(iiout);
+      }, simplify=F) %>% bind_rows %>% 
+      # prepend a column with current column names and current column names 
+      # without unique prefixes (for joins to later versions of the same data)
+      cbind(colname=outheaders,durablename=mapply(gsub,(.)$colcd,'',outheaders)
+            ,.);
+    # Note: need to create a download button in the UI and a download handler
+    write_csv(dict,dictfile<-tempfile(gsub('\\.(db|csv)',''
+                                           ,paste0(basename(rv$infilename)
+                                                   ,'_dict_'))
+                                      ,fileext = '.csv'),na='');
+    message('Created data dictionary');
+    
     #py$dfmeta$fhandle$seek(0); py$dfmeta$nrows = 3;
     output$tb_outfile_prev <- DT::renderDataTable(
     DT::datatable(read_delim(tempname
