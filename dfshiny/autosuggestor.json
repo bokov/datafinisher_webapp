@@ -1,0 +1,73 @@
+# THIS FILE SHOULD ONLY BE EDITED BY PERSONNEL AUTHORIZED TO ACCESS THE 
+# SYSTEM AND ITS DATA WITH AT LEAST THE SAME PRIVILEGES AS THE DataFinisher 
+# APP ITSELF!
+# 
+# Each item in curly brackets should have the name of a DataFinisher rule on
+# the left side of the colon and a python expression on the right side of the
+# colon that will evaluate to TRUE or FALSE.
+# 
+# The items are evaluated against the metadata for each column in the order 
+# they appear here.
+# 
+# Currently the valid rulenames are:
+# 'true_false', 'med_numeric', 'diag_active', 'concat_unique', 'last_numeric'
+#
+# 'med_numeric_fltrcode' will NOT work because it needs user interaction and
+# the point of this suggestor file is to generate reasonable starting defaults 
+# when the user does not or cannot give their preferences.
+# 
+# The following metadata variables are available for use by the expressions:
+# 
+# 'patvis': number of patient-visits having a non-null value for this column
+# 'patvis_null': number of patient-visits loacking any values for this column
+# 'pats': number of patients who have at least one non-null value for this column
+# 'pats_null': number of patients lacking any values for this column
+# 'mxconmod': maximum number of concept-mod combinations for any visit
+# 'quantity_num'
+# 'mxinsts'
+# 'nval_num'
+# 'cid'
+# 'name'
+# 'colcd'
+# 'rule'
+# 'ddomain'
+# 'concept_path'
+# 'mxfacts'
+# 'done'
+# 'valueflag_cd'
+# 'ccd': number of unique concept_cd's?
+# 'colid'
+# 'tval_char'
+# 'mod'
+# 'confidence_num'
+# 'units_cd'
+# 'location_cd'
+# 'valtype_cd'
+#
+# The special variable 'noutputs' is the number of previous rules that have 
+# already been assigned. A rule that has noutputs==0 as a requirement will 
+# only be assigned if no other rules above it were suggested.
+
+#[
+# {
+#  "true_false": "any([xx in ddomain.lower() for xx in ['icd9','icd10','dx_id','icd10pcs','cpt']])"
+# }, 
+# {
+#  "diag_active": "any([xx in ddomain.lower() for xx in ['icd9','icd10','dx_id','icd10pcs']]) and noutputs==0"
+# }, 
+# {
+#  "med_numeric": "ccd==1 and noutputs==0"
+# }, 
+# {
+#  "true_false": "ccd==1 and noutputs==0"
+# }, 
+# {
+#  "concat_unique": "noutputs==0"
+# }
+#]
+
+[
+    {"true_false": "any([xx in ddomain.lower() for xx in ['icd9','icd10','dx_id','icd10pcs','icd9pcs','cpt']])"}
+   ,{"med_numeric": "ccd==1 and noutputs==0"}
+   ,{"concat_unique": "noutputs==0"}
+]
