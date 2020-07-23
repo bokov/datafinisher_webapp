@@ -477,21 +477,27 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
   
   # outputWrite ----
   observeEvent(input$outwrite,{
-    foutname<-py$dfmeta$processRows(outfile = tempfile()
+    fnicename <- paste0('DF_',gsub('\\.db$','.csv',basename(rv$infilename)));
+    foutname<-py$dfmeta$processRows(outfile = file.path(tempdir(),fnicename)
                                     ,returnwhat = 'filename');
     if(file.size(foutname)>zip_cutoff){
       message('\n*** large output file, zipping ***\n');
       foutname_final <- paste0(foutname,'.zip');
-      zip(foutname_final,foutname);
+      zip(foutname_final,foutname,flags='-j9');
       suffix_final <- '.zip';
     } else {foutname_final <- foutname; suffix_final <- '';}
-    fnicename <- paste0('DF_',gsub('\\.db$','.csv',basename(rv$infilename))
-                        ,suffix_final);
+    fnicename <- paste0(fnicename,suffix_final);
     message(sprintf('\n*** %s ready for download as %s ***\n'
                     ,foutname_final,fnicename));
     output$outdownload <- downloadHandler(filename=fnicename
                                           ,content=function(con) {
                                             file.copy(foutname_final,con)});
+    # get the headers
+    
+    # if as_is_col and colmeta != '', treat as hardcoded value
+    # if as_is_col and colmeta == '' and the non-suffix version exists
+    #    replace ii with the non-suffix version
+    # getDict, munge NULLs to NAs
     show('outdownload');
   });
 
