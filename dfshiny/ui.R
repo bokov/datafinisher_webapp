@@ -28,8 +28,6 @@ shinyUI(fluidPage(
               actionButton('debug','Debug')} else c()
             )
   )
-  # ,actionButton('btDumpcols','Column Info')
-  # ,div(id='debugval','Waiting for debug value...')
   ,mainPanel(width=12,id='maintabs'
     # tabsetPanel ----
       ,div(id='termsofuse', helptext$hMainInfo,class='regulartext')
