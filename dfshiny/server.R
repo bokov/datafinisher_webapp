@@ -73,15 +73,13 @@ shinyServer(function(input, output, session) {
   # create dfmeta ----
   observeEvent(c(rv$infile,rv$disclaimerAgreed),{
     req(rv$infile,rv$disclaimerAgreed);
-    # put up modal alert
-    shinyalert(title='Please wait.',messages$mLoading
-               ,closeOnEsc = F,showConfirmButton = F);
+    showModal(modalDialog(messages$mLoading,title='Please wait.',footer=NULL));
     py_run_string(sprintf("dfmeta=DFMeta(fref='%s',suggestions=autosuggestor)"
                           ,rv$infile));
     # Indicator for the rest of the webapp that the core object is ready
     rv$have_dfmeta <- Sys.time();
     message('\n*** dfmeta created ***\n');
-    closeAlert();
+    removeModal();
   });
   
   
@@ -89,7 +87,7 @@ shinyServer(function(input, output, session) {
   observeEvent(rv$have_dfmeta,{
     req(rv$have_dfmeta);
     hide('termsofuse');
-    closeAlert();
+    removeModal();
     show(selector = '#maintabs>.tabbable');
     dat <- try(read_delim(paste0(py$dfmeta$sampleInput(nrows = 300)
                                  ,collapse='\n')
@@ -409,7 +407,6 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
       browser();
     }
     tempname <- py$dfmeta$processRows(tempfile(),nrows=300);
-    
     # get the metadata for all columns that have dynamic data
     colmetas <- py$dfmeta$getColIDs(ids=c('incolid','colmeta')
                                     ,childtype='chosen',asdicts=T);
