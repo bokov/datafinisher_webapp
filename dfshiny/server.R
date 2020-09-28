@@ -435,7 +435,7 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
       iiout <- lapply(iiout,function(kk) c(unlist(kk),NA)[1]) %>% 
         data.frame(stringsAsFactors = FALSE);
       return(iiout);
-      }, simplify=F) %>% bind_rows %>% 
+      }, simplify=F) %>% rbindlist(fill=TRUE) %>%
       # prepend a column with current column names and current column names 
       # without unique prefixes (for joins to later versions of the same data)
       cbind(colname=outheaders,durablename=mapply(gsub,(.)$colcd,'',outheaders)
