@@ -13,7 +13,8 @@ source('functions.R');
 # shinyServer ----
 shinyServer(function(input, output, session) {
   # server init ----
-
+  debugtrigger <- reactiveFileReader(5000,session=NULL,filePath = '.debugnow'
+                                     ,readFunc = file.exists);
   shinyalert('User Agreement',text=helptext$disclaimer
              # user agreement ----
              ,html=T,confirmButtonText = 'I agree',confirmButtonCol = hcol
@@ -512,8 +513,10 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
     cat('\n***\n',names(rv$dumpcols),'\n***\n');
   });
   
-  
 # Testing ----
+  # trigger debug with a file ('.debugnow') if the UI is hung
+  observeEvent(debugtrigger(),{if(debugtrigger()) browser();})
+  # trigger debug from UI
   observeEvent(input$debug,{
     browser();
    });
