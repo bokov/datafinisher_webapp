@@ -1,7 +1,7 @@
 # uncomment below line if reticulate gets stubborn about python version
 reticulate::use_python('/usr/bin/python',required = TRUE);
 library(bsplus); library(reticulate); library(readr); library(shinyjqui);
-library(DT);
+library(DT); library(digest);
 
 # reminder: the interactive debugger for reticulate is repl_python 
 # 
@@ -438,7 +438,7 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
       cbind(colname=outheaders,durablename=mapply(gsub,(.)$colcd,'',outheaders)
             ,.);
     # Note: need to create a download button in the UI and a download handler
-    write_csv(dict,dictfile<-tempfile(gsub('\\.(db|csv)',''
+    write_csv(dict,rv$dictfile<-tempfile(gsub('\\.(db|csv)',''
                                            ,paste0(basename(rv$infilename)
                                                    ,'_dict_'))
                                       ,fileext = '.csv'),na='');
@@ -464,9 +464,9 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
                           # Shiny.onInputChange('tb_outfile_prev_state','loaded');
                           #           }")
                                 )), server=F);
-    output$dictdownload <- downloadHandler(filename=basename(dictfile)
+    output$dictdownload <- downloadHandler(filename=basename(rv$dictfile)
                                           ,content=function(con) {
-                                            file.copy(dictfile,con)});
+                                            file.copy(rv$dictfile,con)});
     show('outwrite');show('dictdownload');
     });
   
@@ -478,21 +478,37 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
   
   # outputWrite ----
   observeEvent(input$outwrite,{
-    fnicename <- paste0('DF_',gsub('\\.db$','.csv',basename(rv$infilename)));
+    # stripping out the full path in order to manipulate basename
+    fnicename <- paste0('DF_'
+                        ,gsub('\\.(db|csv)$','',basename(rv$infilename)
+                              ,ignore.case=TRUE),'_');
     foutname<-py$dfmeta$processRows(outfile = file.path(tempdir(),fnicename)
                                     ,returnwhat = 'filename');
+    # Append the crc32 hash to 'fincename', which is the default name under 
+    # which the file will be downloaded. At this point fnicename has the full
+    # path again
+    fnicename <- paste0(foutname,fcrc<-digest(foutname,algo='crc32',file=TRUE)
+                        ,'.csv');
+    file.rename(foutname,fnicename); foutname <- fnicename;
     if(file.size(foutname)>zip_cutoff){
       message('\n*** large output file, zipping ***\n');
       foutname_final <- paste0(foutname,'.zip');
       zip(foutname_final,foutname,flags='-j9');
-      suffix_final <- '.zip';
-    } else {foutname_final <- foutname; suffix_final <- '';}
-    fnicename <- paste0(fnicename,suffix_final);
+    } else foutname_final <- foutname;
+    # fnicename is synched to foutname_final and once again the path stripped
+    fnicename <- basename(foutname_final);
     message(sprintf('\n*** %s ready for download as %s ***\n'
                     ,foutname_final,fnicename));
     output$outdownload <- downloadHandler(filename=fnicename
                                           ,content=function(con) {
                                             file.copy(foutname_final,con)});
+    # we replace the random suffix of the dictionary file with the crc32 of 
+    # the data on which it's based
+    dictfile <- gsub('.csv$','_dict.csv',foutname);
+    file.rename(rv$dictfile,dictfile); rv$dictfile <- dictfile;
+    output$dictdownload <- downloadHandler(filename=basename(rv$dictfile)
+                                           ,content=function(con) {
+                                             file.copy(rv$dictfile,con)});
     # get the headers
     
     # if as_is_col and colmeta != '', treat as hardcoded value
