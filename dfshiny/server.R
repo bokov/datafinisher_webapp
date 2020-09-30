@@ -152,9 +152,10 @@ shinyServer(function(input, output, session) {
         }
       });
     }
+    # .infodivs js ----
     runjs("$('.collapse').on('shown.bs.collapse', function (e) {
         Shiny.onInputChange('activecolid',($('.in>.panel-body>div').attr('id')));
-    })")
+    })");
     message('\n*** infodivs created ***\n');
     
     # update outputs ----
@@ -188,9 +189,11 @@ if( $('[id^=c-].ui-sortable').length == 0 ) {
   xx = + new Date() } else {
     /* This is where we track the currenly opened column panel */
     $('.collapse').on('shown.bs.collapse', function (e) {
+      //console.log('selected: ' + activecolid);
       activecolid = $('.in>.panel-body>div').attr('id');
       if(activecolid == undefined){activecolid = '(none selected)'};
       $('.activecolidtxt').text(activecolid);
+      e.target.parentNode.scrollIntoView(); // scroll selected panel into view
       Shiny.onInputChange('activecolid',activecolid);
     }).on('hide.bs.collapse',function(e){
       activecolid = '(none selected)';
