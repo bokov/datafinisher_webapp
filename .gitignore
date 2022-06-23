@@ -35,3 +35,11 @@ vignettes/*.pdf
 # Shiny token, see https://shiny.rstudio.com/articles/shinyapps.html
 rsconnect/
 .Rproj.user
+
+# Python temporary files
+*.pyc
+
+# Python local patches
+df_localpatch.py
+df_localpatch.R
+

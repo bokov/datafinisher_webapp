@@ -25,6 +25,7 @@ shinyServer(function(input, output, session) {
                show('infile')});
   # load the stuff we need from datafinisher
   #observe_helpers(help_dir = 'www/docs');
+  if(file.exists('df_localpatch.py')) source_python('df_localpatch.py');
   source_python('df_reticulate.py');
   runjs("$('#customQB').on('hidden.bs.collapse',function(){
         Shiny.onInputChange('qbtest_out',null);

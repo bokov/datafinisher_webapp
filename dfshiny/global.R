@@ -12,6 +12,8 @@ if(shinyapps){
                      , type = "source");}
 }
 
+if(file.exists('localpatch.R')) source('localpatch.R');
+
 # Libraries needed by both ui.R and server.R ----
 library(compiler); enableJIT(3);
 library(dplyr);
